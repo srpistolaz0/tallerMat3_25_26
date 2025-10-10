@@ -252,7 +252,7 @@ geojson_sf <- sf::st_read("data/mallorca/2024-09-13/neighbourhoods.geojson")
 
 ```
 Reading layer `neighbourhoods' from data source 
-  `C:\Users\ricuib\Documents\Docencia_24_25\MatGIN\Taller_evaluable_24_25\tallerMat3_24_25\data\mallorca\2024-09-13\neighbourhoods.geojson' 
+  `C:\Users\ricuib\Documents\Docencia_25_26\clase\abnbclase\tallerMat3_24_25\data\mallorca\2024-09-13\neighbourhoods.geojson' 
   using driver `GeoJSON'
 Simple feature collection with 53 features and 2 fields
 Geometry type: MULTIPOLYGON
