@@ -427,7 +427,17 @@ table(cut(listings0$review_scores_rating,5),
 
 
 
-## Pregunta 8 (**2 puntos**)
+
+## Pregunta 9 (**3 puntos**)
+
+Construye un data set con las variables 
+review_scores_rating, review_scores_cleanliness, review_scores_location, review_scores_value de listings0 y  el municipio/zona `neighbourhood_cleansed`
+
+Calcula la matriz de correlaciones entre estas variables y haz un gráfico de pares (pair plot) con la librería GGally. Comenta los resultados.
+
+Haz un matrixplot de las correlaciones con la librería corrplot. Comenta los resultados.
+
+## Pregunta 9 (**2 puntos**)
 
 La [Zipf's law es una ley empírica](https://en.wikipedia.org/wiki/Zipf%27s_law#Word_frequencies_in_natural_languages) que dice que la frecuencia de las palabras en un texto es inversamente proporcional a su rango. Decidid si la ley se ajusta a los datos de la longitud de los comentarios de los apartamentos de la muestra "2025-09-21" Mallorca, haced lo mismo para description de `listings0`. Para ello, haced un análisis de regresión lineal de la frecuencia de las longitudes de los comentarios/descripciones de los apartamentos de Mallorca y el rango de las longitudes de los comentarios. Justificad la respuesta, estadísticamente y gráficamente.
 
