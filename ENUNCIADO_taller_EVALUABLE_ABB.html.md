@@ -382,6 +382,8 @@ Presenta los resultados con una tabla de kableExtra.
 #  - listings0 ya está creado según el enunciado
 #  - listings0 tiene la columna 'date'
 #  - 'price' es numérica (si no lo es, habría que convertirla en otro chunk)
+library(dplyr)
+library(kableExtra)
 
 # 1. Calcular los estadísticos descriptivos por municipio y periodo.
 #    group_by(): forma grupos por municipio y fecha de scraping
@@ -414,41 +416,68 @@ resumen_p1 <- listings0 %>%
 # head(resumen_p1)
 
 # 2. Ordenar y mostrar la tabla con kableExtra
-resumen_p1 %>%
-  arrange(neighbourhood_cleansed, date) %>%   # ordena por municipio y fecha
+
+
+# Opcional: que los NA aparezcan como vacío en la tabla
+options(knitr.kable.NA = "")
+
+tabla_p1 <- resumen_p1 %>%
+  arrange(neighbourhood_cleansed, date) %>%              # ordenar municipio/fecha
+  mutate(across(where(is.numeric), ~ round(., 2)))       # redondear numéricos
+
+tabla_p1 %>%
   kbl(
     caption = "Estadísticos descriptivos de price y number_of_reviews por municipio y periodo",
-    digits = 2                                # redondear a 2 decimales
+    col.names = c(
+      "Municipio", "Periodo", "n",
+      "Media", "SD", "Mín.", "Q1", "Mediana", "Q3", "Máx.",
+      "Media", "SD", "Mediana"
+    ),
+    align    = c("l", "c", "r", rep("r", 10)),           # alineación columnas
+    booktabs = TRUE
   ) %>%
-  kable_styling(full_width = FALSE)           # tabla más estrecha y centrada
+  # Cabeceras agrupadas: primeras 3 columnas sin grupo,
+  # luego 7 para price y 3 para number_of_reviews
+  add_header_above(c(" " = 3, "Price" = 7, "Number of reviews" = 3)) %>%
+  kable_styling(
+    full_width        = FALSE,
+    bootstrap_options = c("striped", "hover", "condensed", "responsive")
+  ) %>%
+  column_spec(1, bold = TRUE) %>%                        # municipio en negrita
+  collapse_rows(columns = 1, valign = "top")             # unir filas por municipio
 ```
 
 ::: {.cell-output-display}
 
 `````{=html}
-<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<table class="table table-striped table-hover table-condensed table-responsive" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>Estadísticos descriptivos de price y number_of_reviews por municipio y periodo</caption>
  <thead>
+<tr>
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="3"></th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="7"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">Price</div></th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3"><div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">Number of reviews</div></th>
+</tr>
   <tr>
-   <th style="text-align:left;"> neighbourhood_cleansed </th>
-   <th style="text-align:left;"> date </th>
+   <th style="text-align:left;"> Municipio </th>
+   <th style="text-align:center;"> Periodo </th>
    <th style="text-align:right;"> n </th>
-   <th style="text-align:right;"> mean_price </th>
-   <th style="text-align:right;"> sd_price </th>
-   <th style="text-align:right;"> min_price </th>
-   <th style="text-align:right;"> q1_price </th>
-   <th style="text-align:right;"> med_price </th>
-   <th style="text-align:right;"> q3_price </th>
-   <th style="text-align:right;"> max_price </th>
-   <th style="text-align:right;"> mean_reviews </th>
-   <th style="text-align:right;"> sd_reviews </th>
-   <th style="text-align:right;"> med_reviews </th>
+   <th style="text-align:right;"> Media </th>
+   <th style="text-align:right;"> SD </th>
+   <th style="text-align:right;"> Mín. </th>
+   <th style="text-align:right;"> Q1 </th>
+   <th style="text-align:right;"> Mediana </th>
+   <th style="text-align:right;"> Q3 </th>
+   <th style="text-align:right;"> Máx. </th>
+   <th style="text-align:right;"> Media </th>
+   <th style="text-align:right;"> SD </th>
+   <th style="text-align:right;"> Mediana </th>
   </tr>
  </thead>
 <tbody>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Alaró </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 62 </td>
    <td style="text-align:right;"> 425.23 </td>
    <td style="text-align:right;"> 884.07 </td>
@@ -462,8 +491,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 62 </td>
    <td style="text-align:right;"> 400.15 </td>
    <td style="text-align:right;"> 771.30 </td>
@@ -477,8 +506,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 20.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 439.57 </td>
    <td style="text-align:right;"> 831.16 </td>
@@ -492,8 +521,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 20.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 62 </td>
    <td style="text-align:right;"> 599.92 </td>
    <td style="text-align:right;"> 1496.86 </td>
@@ -507,8 +536,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 22.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 62 </td>
    <td style="text-align:right;"> 567.16 </td>
    <td style="text-align:right;"> 1487.23 </td>
@@ -522,8 +551,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 25.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 62 </td>
    <td style="text-align:right;"> 537.38 </td>
    <td style="text-align:right;"> 1321.93 </td>
@@ -537,8 +566,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 25.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 62 </td>
    <td style="text-align:right;"> 724.13 </td>
    <td style="text-align:right;"> 1795.41 </td>
@@ -552,8 +581,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 29.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alaró </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 62 </td>
    <td style="text-align:right;"> 851.35 </td>
    <td style="text-align:right;"> 2020.01 </td>
@@ -567,8 +596,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 33.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Alcúdia </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 956 </td>
    <td style="text-align:right;"> 210.38 </td>
    <td style="text-align:right;"> 164.43 </td>
@@ -582,8 +611,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 955 </td>
    <td style="text-align:right;"> 209.82 </td>
    <td style="text-align:right;"> 170.98 </td>
@@ -597,8 +626,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 955 </td>
    <td style="text-align:right;"> 272.23 </td>
    <td style="text-align:right;"> 196.04 </td>
@@ -612,8 +641,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 955 </td>
    <td style="text-align:right;"> 284.61 </td>
    <td style="text-align:right;"> 485.23 </td>
@@ -627,8 +656,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 953 </td>
    <td style="text-align:right;"> 259.89 </td>
    <td style="text-align:right;"> 583.91 </td>
@@ -642,8 +671,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 955 </td>
    <td style="text-align:right;"> 753.86 </td>
    <td style="text-align:right;"> 2151.10 </td>
@@ -657,8 +686,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 955 </td>
    <td style="text-align:right;"> 909.07 </td>
    <td style="text-align:right;"> 2309.24 </td>
@@ -672,8 +701,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Alcúdia </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 955 </td>
    <td style="text-align:right;"> 816.68 </td>
    <td style="text-align:right;"> 2158.36 </td>
@@ -687,8 +716,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Algaida </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 61 </td>
    <td style="text-align:right;"> 279.00 </td>
    <td style="text-align:right;"> 402.79 </td>
@@ -702,8 +731,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 61 </td>
    <td style="text-align:right;"> 255.95 </td>
    <td style="text-align:right;"> 261.49 </td>
@@ -717,8 +746,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 60 </td>
    <td style="text-align:right;"> 313.19 </td>
    <td style="text-align:right;"> 397.38 </td>
@@ -732,8 +761,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 60 </td>
    <td style="text-align:right;"> 310.71 </td>
    <td style="text-align:right;"> 403.79 </td>
@@ -747,8 +776,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 60 </td>
    <td style="text-align:right;"> 300.39 </td>
    <td style="text-align:right;"> 301.83 </td>
@@ -762,8 +791,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 60 </td>
    <td style="text-align:right;"> 1372.37 </td>
    <td style="text-align:right;"> 3014.46 </td>
@@ -777,8 +806,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 60 </td>
    <td style="text-align:right;"> 1536.37 </td>
    <td style="text-align:right;"> 3190.42 </td>
@@ -792,8 +821,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Algaida </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 60 </td>
    <td style="text-align:right;"> 1380.87 </td>
    <td style="text-align:right;"> 2952.53 </td>
@@ -807,8 +836,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 21.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Andratx </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 586.34 </td>
    <td style="text-align:right;"> 1058.44 </td>
@@ -822,8 +851,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 584.71 </td>
    <td style="text-align:right;"> 933.90 </td>
@@ -837,8 +866,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 752.56 </td>
    <td style="text-align:right;"> 1253.32 </td>
@@ -852,8 +881,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 795.60 </td>
    <td style="text-align:right;"> 1415.74 </td>
@@ -867,8 +896,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 693.70 </td>
    <td style="text-align:right;"> 1350.73 </td>
@@ -882,8 +911,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 930.99 </td>
    <td style="text-align:right;"> 1866.29 </td>
@@ -897,8 +926,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 1020.52 </td>
    <td style="text-align:right;"> 1844.39 </td>
@@ -912,8 +941,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Andratx </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 136 </td>
    <td style="text-align:right;"> 1120.12 </td>
    <td style="text-align:right;"> 2070.25 </td>
@@ -927,8 +956,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 18.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Ariany </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 218.38 </td>
    <td style="text-align:right;"> 154.56 </td>
@@ -942,8 +971,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 4.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 211.93 </td>
    <td style="text-align:right;"> 150.06 </td>
@@ -957,8 +986,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 4.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 256.52 </td>
    <td style="text-align:right;"> 195.54 </td>
@@ -972,8 +1001,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 243.30 </td>
    <td style="text-align:right;"> 179.95 </td>
@@ -987,8 +1016,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 222.39 </td>
    <td style="text-align:right;"> 122.51 </td>
@@ -1002,8 +1031,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 2705.76 </td>
    <td style="text-align:right;"> 4159.36 </td>
@@ -1017,8 +1046,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 3069.37 </td>
    <td style="text-align:right;"> 4268.56 </td>
@@ -1032,8 +1061,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ariany </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 46 </td>
    <td style="text-align:right;"> 2861.72 </td>
    <td style="text-align:right;"> 4136.70 </td>
@@ -1047,8 +1076,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Artà </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 244.51 </td>
    <td style="text-align:right;"> 226.57 </td>
@@ -1062,8 +1091,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 4.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 248.78 </td>
    <td style="text-align:right;"> 230.45 </td>
@@ -1077,8 +1106,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 247.18 </td>
    <td style="text-align:right;"> 132.03 </td>
@@ -1092,8 +1121,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 298.43 </td>
    <td style="text-align:right;"> 750.50 </td>
@@ -1107,8 +1136,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 291.50 </td>
    <td style="text-align:right;"> 757.48 </td>
@@ -1122,8 +1151,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 1611.71 </td>
    <td style="text-align:right;"> 3306.08 </td>
@@ -1137,8 +1166,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 2329.95 </td>
    <td style="text-align:right;"> 3843.43 </td>
@@ -1152,8 +1181,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Artà </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 173 </td>
    <td style="text-align:right;"> 1954.48 </td>
    <td style="text-align:right;"> 3570.04 </td>
@@ -1167,8 +1196,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Banyalbufar </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 213.86 </td>
    <td style="text-align:right;"> 161.27 </td>
@@ -1182,8 +1211,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 27.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 219.20 </td>
    <td style="text-align:right;"> 168.24 </td>
@@ -1197,8 +1226,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 31.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 258.55 </td>
    <td style="text-align:right;"> 233.55 </td>
@@ -1212,8 +1241,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 32.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 257.61 </td>
    <td style="text-align:right;"> 169.13 </td>
@@ -1227,8 +1256,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 34.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 244.64 </td>
    <td style="text-align:right;"> 206.85 </td>
@@ -1242,8 +1271,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 37.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 666.24 </td>
    <td style="text-align:right;"> 2033.87 </td>
@@ -1257,8 +1286,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 37.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 660.95 </td>
    <td style="text-align:right;"> 1849.59 </td>
@@ -1272,8 +1301,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 43.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Banyalbufar </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 647.61 </td>
    <td style="text-align:right;"> 1849.15 </td>
@@ -1287,8 +1316,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 55.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Binissalem </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 259.07 </td>
    <td style="text-align:right;"> 194.74 </td>
@@ -1302,8 +1331,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 264.00 </td>
    <td style="text-align:right;"> 193.16 </td>
@@ -1317,8 +1346,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 281.20 </td>
    <td style="text-align:right;"> 198.79 </td>
@@ -1332,8 +1361,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 294.39 </td>
    <td style="text-align:right;"> 221.81 </td>
@@ -1347,8 +1376,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 281.25 </td>
    <td style="text-align:right;"> 256.97 </td>
@@ -1362,8 +1391,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 969.56 </td>
    <td style="text-align:right;"> 2428.47 </td>
@@ -1377,8 +1406,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 1000.42 </td>
    <td style="text-align:right;"> 2372.78 </td>
@@ -1392,8 +1421,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Binissalem </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 1124.80 </td>
    <td style="text-align:right;"> 2600.39 </td>
@@ -1407,8 +1436,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Bunyola </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 43 </td>
    <td style="text-align:right;"> 288.28 </td>
    <td style="text-align:right;"> 230.47 </td>
@@ -1422,8 +1451,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 18.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 43 </td>
    <td style="text-align:right;"> 298.51 </td>
    <td style="text-align:right;"> 223.69 </td>
@@ -1437,8 +1466,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 43 </td>
    <td style="text-align:right;"> 354.19 </td>
    <td style="text-align:right;"> 269.21 </td>
@@ -1452,8 +1481,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 43 </td>
    <td style="text-align:right;"> 350.88 </td>
    <td style="text-align:right;"> 269.17 </td>
@@ -1467,8 +1496,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 23.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 43 </td>
    <td style="text-align:right;"> 316.35 </td>
    <td style="text-align:right;"> 271.64 </td>
@@ -1482,8 +1511,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 24.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 42 </td>
    <td style="text-align:right;"> 752.64 </td>
    <td style="text-align:right;"> 1832.92 </td>
@@ -1497,8 +1526,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 25.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 42 </td>
    <td style="text-align:right;"> 786.49 </td>
    <td style="text-align:right;"> 1845.50 </td>
@@ -1512,8 +1541,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 27.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Bunyola </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 42 </td>
    <td style="text-align:right;"> 769.86 </td>
    <td style="text-align:right;"> 1823.79 </td>
@@ -1527,8 +1556,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 29.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Búger </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 254.64 </td>
    <td style="text-align:right;"> 146.96 </td>
@@ -1542,8 +1571,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 252.61 </td>
    <td style="text-align:right;"> 145.21 </td>
@@ -1557,8 +1586,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 297.86 </td>
    <td style="text-align:right;"> 171.24 </td>
@@ -1572,8 +1601,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 305.36 </td>
    <td style="text-align:right;"> 182.89 </td>
@@ -1587,8 +1616,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 283.96 </td>
    <td style="text-align:right;"> 168.52 </td>
@@ -1602,8 +1631,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 851.95 </td>
    <td style="text-align:right;"> 2223.10 </td>
@@ -1617,8 +1646,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 718.56 </td>
    <td style="text-align:right;"> 1838.50 </td>
@@ -1632,8 +1661,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Búger </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 98 </td>
    <td style="text-align:right;"> 784.13 </td>
    <td style="text-align:right;"> 2025.52 </td>
@@ -1647,8 +1676,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Calvià </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 462.89 </td>
    <td style="text-align:right;"> 600.58 </td>
@@ -1662,8 +1691,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 448.31 </td>
    <td style="text-align:right;"> 543.37 </td>
@@ -1677,8 +1706,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 508.48 </td>
    <td style="text-align:right;"> 490.07 </td>
@@ -1692,8 +1721,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 510.79 </td>
    <td style="text-align:right;"> 533.10 </td>
@@ -1707,8 +1736,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 451.72 </td>
    <td style="text-align:right;"> 510.44 </td>
@@ -1722,8 +1751,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 22.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 740.86 </td>
    <td style="text-align:right;"> 1731.77 </td>
@@ -1737,8 +1766,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 23.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 791.22 </td>
    <td style="text-align:right;"> 1538.36 </td>
@@ -1752,8 +1781,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 25.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Calvià </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 183 </td>
    <td style="text-align:right;"> 833.80 </td>
    <td style="text-align:right;"> 1760.20 </td>
@@ -1767,8 +1796,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 28.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Campanet </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 195.73 </td>
    <td style="text-align:right;"> 123.24 </td>
@@ -1782,8 +1811,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 200.32 </td>
    <td style="text-align:right;"> 154.02 </td>
@@ -1797,8 +1826,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 244.54 </td>
    <td style="text-align:right;"> 207.37 </td>
@@ -1812,8 +1841,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 240.07 </td>
    <td style="text-align:right;"> 204.85 </td>
@@ -1827,8 +1856,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 220.01 </td>
    <td style="text-align:right;"> 131.41 </td>
@@ -1842,8 +1871,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 1423.48 </td>
    <td style="text-align:right;"> 3129.20 </td>
@@ -1857,8 +1886,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 1365.45 </td>
    <td style="text-align:right;"> 2983.56 </td>
@@ -1872,8 +1901,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campanet </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 97 </td>
    <td style="text-align:right;"> 1299.56 </td>
    <td style="text-align:right;"> 2918.05 </td>
@@ -1887,8 +1916,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 20.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Campos </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 311 </td>
    <td style="text-align:right;"> 263.56 </td>
    <td style="text-align:right;"> 245.69 </td>
@@ -1902,8 +1931,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 311 </td>
    <td style="text-align:right;"> 260.82 </td>
    <td style="text-align:right;"> 216.54 </td>
@@ -1917,8 +1946,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 310 </td>
    <td style="text-align:right;"> 293.29 </td>
    <td style="text-align:right;"> 230.80 </td>
@@ -1932,8 +1961,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 310 </td>
    <td style="text-align:right;"> 322.70 </td>
    <td style="text-align:right;"> 599.78 </td>
@@ -1947,8 +1976,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 310 </td>
    <td style="text-align:right;"> 323.22 </td>
    <td style="text-align:right;"> 609.11 </td>
@@ -1962,8 +1991,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 311 </td>
    <td style="text-align:right;"> 1171.16 </td>
    <td style="text-align:right;"> 2777.68 </td>
@@ -1977,8 +2006,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 311 </td>
    <td style="text-align:right;"> 1455.01 </td>
    <td style="text-align:right;"> 3029.80 </td>
@@ -1992,8 +2021,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Campos </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 312 </td>
    <td style="text-align:right;"> 1346.72 </td>
    <td style="text-align:right;"> 2927.00 </td>
@@ -2007,8 +2036,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Capdepera </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 222.22 </td>
    <td style="text-align:right;"> 259.10 </td>
@@ -2022,8 +2051,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 224.80 </td>
    <td style="text-align:right;"> 257.60 </td>
@@ -2037,8 +2066,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 259.51 </td>
    <td style="text-align:right;"> 282.05 </td>
@@ -2052,8 +2081,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 262.47 </td>
    <td style="text-align:right;"> 287.17 </td>
@@ -2067,8 +2096,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 241.43 </td>
    <td style="text-align:right;"> 289.46 </td>
@@ -2082,8 +2111,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 2503.65 </td>
    <td style="text-align:right;"> 3937.40 </td>
@@ -2097,8 +2126,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 2879.30 </td>
    <td style="text-align:right;"> 4080.55 </td>
@@ -2112,8 +2141,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Capdepera </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 281 </td>
    <td style="text-align:right;"> 2850.43 </td>
    <td style="text-align:right;"> 4079.32 </td>
@@ -2127,8 +2156,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Consell </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 253.14 </td>
    <td style="text-align:right;"> 135.75 </td>
@@ -2142,8 +2171,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 34.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 253.71 </td>
    <td style="text-align:right;"> 125.93 </td>
@@ -2157,8 +2186,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 34.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 288.71 </td>
    <td style="text-align:right;"> 131.98 </td>
@@ -2172,8 +2201,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 36.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 260.86 </td>
    <td style="text-align:right;"> 136.74 </td>
@@ -2187,8 +2216,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 39.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 252.29 </td>
    <td style="text-align:right;"> 169.25 </td>
@@ -2202,8 +2231,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 40.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 1622.86 </td>
    <td style="text-align:right;"> 3695.47 </td>
@@ -2217,8 +2246,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 40.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 3376.50 </td>
    <td style="text-align:right;"> 4756.20 </td>
@@ -2232,8 +2261,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 41.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Consell </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 7 </td>
    <td style="text-align:right;"> 2908.86 </td>
    <td style="text-align:right;"> 4513.86 </td>
@@ -2247,8 +2276,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 42.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Costitx </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 185.13 </td>
    <td style="text-align:right;"> 118.01 </td>
@@ -2262,8 +2291,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 197.29 </td>
    <td style="text-align:right;"> 122.89 </td>
@@ -2277,8 +2306,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 231.68 </td>
    <td style="text-align:right;"> 152.09 </td>
@@ -2292,8 +2321,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 241.48 </td>
    <td style="text-align:right;"> 149.57 </td>
@@ -2307,8 +2336,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 204.35 </td>
    <td style="text-align:right;"> 127.13 </td>
@@ -2322,8 +2351,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 2035.45 </td>
    <td style="text-align:right;"> 3723.50 </td>
@@ -2337,8 +2366,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 2262.43 </td>
    <td style="text-align:right;"> 3793.18 </td>
@@ -2352,8 +2381,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Costitx </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 31 </td>
    <td style="text-align:right;"> 2055.87 </td>
    <td style="text-align:right;"> 3715.32 </td>
@@ -2367,8 +2396,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 21.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Deyá </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 43 </td>
    <td style="text-align:right;"> 462.50 </td>
    <td style="text-align:right;"> 368.94 </td>
@@ -2382,8 +2411,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 26.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 43 </td>
    <td style="text-align:right;"> 494.44 </td>
    <td style="text-align:right;"> 411.76 </td>
@@ -2397,8 +2426,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 27.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 657.05 </td>
    <td style="text-align:right;"> 590.03 </td>
@@ -2412,8 +2441,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 28.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 656.40 </td>
    <td style="text-align:right;"> 575.34 </td>
@@ -2427,8 +2456,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 31.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 515.55 </td>
    <td style="text-align:right;"> 493.98 </td>
@@ -2442,8 +2471,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 32.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 545.26 </td>
    <td style="text-align:right;"> 471.00 </td>
@@ -2457,8 +2486,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 32.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 698.77 </td>
    <td style="text-align:right;"> 618.51 </td>
@@ -2472,8 +2501,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 34.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Deyá </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 44 </td>
    <td style="text-align:right;"> 652.05 </td>
    <td style="text-align:right;"> 576.26 </td>
@@ -2487,8 +2516,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 38.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Escorca </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 243.47 </td>
    <td style="text-align:right;"> 209.09 </td>
@@ -2502,8 +2531,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 26.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 246.95 </td>
    <td style="text-align:right;"> 228.32 </td>
@@ -2517,8 +2546,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 26.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 280.42 </td>
    <td style="text-align:right;"> 288.71 </td>
@@ -2532,8 +2561,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 27.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 277.21 </td>
    <td style="text-align:right;"> 290.09 </td>
@@ -2547,8 +2576,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 31.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 264.11 </td>
    <td style="text-align:right;"> 222.30 </td>
@@ -2562,8 +2591,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 33.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 794.53 </td>
    <td style="text-align:right;"> 2128.49 </td>
@@ -2577,8 +2606,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 33.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 240.75 </td>
    <td style="text-align:right;"> 145.48 </td>
@@ -2592,8 +2621,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 33.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Escorca </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 19 </td>
    <td style="text-align:right;"> 296.16 </td>
    <td style="text-align:right;"> 288.55 </td>
@@ -2607,8 +2636,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 35.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Esporles </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 373.24 </td>
    <td style="text-align:right;"> 310.75 </td>
@@ -2622,8 +2651,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 34 </td>
    <td style="text-align:right;"> 417.44 </td>
    <td style="text-align:right;"> 266.37 </td>
@@ -2637,8 +2666,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 4.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 34 </td>
    <td style="text-align:right;"> 488.50 </td>
    <td style="text-align:right;"> 244.38 </td>
@@ -2652,8 +2681,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 34 </td>
    <td style="text-align:right;"> 502.26 </td>
    <td style="text-align:right;"> 251.02 </td>
@@ -2667,8 +2696,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 34 </td>
    <td style="text-align:right;"> 569.35 </td>
    <td style="text-align:right;"> 373.51 </td>
@@ -2682,8 +2711,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 34 </td>
    <td style="text-align:right;"> 716.21 </td>
    <td style="text-align:right;"> 1686.61 </td>
@@ -2697,8 +2726,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 34 </td>
    <td style="text-align:right;"> 1018.65 </td>
    <td style="text-align:right;"> 2055.43 </td>
@@ -2712,8 +2741,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Esporles </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 34 </td>
    <td style="text-align:right;"> 992.06 </td>
    <td style="text-align:right;"> 2043.64 </td>
@@ -2727,8 +2756,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Estellencs </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 514.33 </td>
    <td style="text-align:right;"> 390.84 </td>
@@ -2742,8 +2771,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 1.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 242.39 </td>
    <td style="text-align:right;"> 165.94 </td>
@@ -2757,8 +2786,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 1.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 297.72 </td>
    <td style="text-align:right;"> 186.27 </td>
@@ -2772,8 +2801,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 1898.22 </td>
    <td style="text-align:right;"> 3731.47 </td>
@@ -2787,8 +2816,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 2114.00 </td>
    <td style="text-align:right;"> 3647.73 </td>
@@ -2802,8 +2831,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 766.50 </td>
    <td style="text-align:right;"> 2308.94 </td>
@@ -2817,8 +2846,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 1894.67 </td>
    <td style="text-align:right;"> 3742.63 </td>
@@ -2832,8 +2861,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Estellencs </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 18 </td>
    <td style="text-align:right;"> 1376.28 </td>
    <td style="text-align:right;"> 3142.08 </td>
@@ -2847,8 +2876,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Felanitx </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 387 </td>
    <td style="text-align:right;"> 351.82 </td>
    <td style="text-align:right;"> 378.65 </td>
@@ -2862,8 +2891,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 387 </td>
    <td style="text-align:right;"> 337.74 </td>
    <td style="text-align:right;"> 365.72 </td>
@@ -2877,8 +2906,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 387 </td>
    <td style="text-align:right;"> 327.79 </td>
    <td style="text-align:right;"> 266.58 </td>
@@ -2892,8 +2921,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 387 </td>
    <td style="text-align:right;"> 342.51 </td>
    <td style="text-align:right;"> 550.95 </td>
@@ -2907,8 +2936,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 387 </td>
    <td style="text-align:right;"> 394.52 </td>
    <td style="text-align:right;"> 621.52 </td>
@@ -2922,8 +2951,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 387 </td>
    <td style="text-align:right;"> 1502.98 </td>
    <td style="text-align:right;"> 2987.93 </td>
@@ -2937,8 +2966,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 388 </td>
    <td style="text-align:right;"> 1633.14 </td>
    <td style="text-align:right;"> 3155.24 </td>
@@ -2952,8 +2981,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Felanitx </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 388 </td>
    <td style="text-align:right;"> 1567.73 </td>
    <td style="text-align:right;"> 3121.42 </td>
@@ -2967,8 +2996,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Fornalutx </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 245.16 </td>
    <td style="text-align:right;"> 233.47 </td>
@@ -2982,8 +3011,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 30.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 249.38 </td>
    <td style="text-align:right;"> 220.01 </td>
@@ -2997,8 +3026,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 29.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 248.15 </td>
    <td style="text-align:right;"> 139.33 </td>
@@ -3012,8 +3041,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 34.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 245.15 </td>
    <td style="text-align:right;"> 127.88 </td>
@@ -3027,8 +3056,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 38.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 221.58 </td>
    <td style="text-align:right;"> 127.55 </td>
@@ -3042,8 +3071,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 40.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 1040.91 </td>
    <td style="text-align:right;"> 2659.07 </td>
@@ -3057,8 +3086,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 41.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 1125.00 </td>
    <td style="text-align:right;"> 2714.83 </td>
@@ -3072,8 +3101,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 45.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Fornalutx </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 1357.33 </td>
    <td style="text-align:right;"> 2970.11 </td>
@@ -3087,8 +3116,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 49.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Inca </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 241.46 </td>
    <td style="text-align:right;"> 165.96 </td>
@@ -3102,8 +3131,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 246.27 </td>
    <td style="text-align:right;"> 176.19 </td>
@@ -3117,8 +3146,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 278.39 </td>
    <td style="text-align:right;"> 243.25 </td>
@@ -3132,8 +3161,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 272.87 </td>
    <td style="text-align:right;"> 243.34 </td>
@@ -3147,8 +3176,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 249.85 </td>
    <td style="text-align:right;"> 139.94 </td>
@@ -3162,8 +3191,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 769.53 </td>
    <td style="text-align:right;"> 2144.98 </td>
@@ -3177,8 +3206,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 790.43 </td>
    <td style="text-align:right;"> 2116.63 </td>
@@ -3192,8 +3221,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Inca </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 143 </td>
    <td style="text-align:right;"> 866.87 </td>
    <td style="text-align:right;"> 2230.29 </td>
@@ -3207,8 +3236,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Lloret de Vistalegre </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 26 </td>
    <td style="text-align:right;"> 191.46 </td>
    <td style="text-align:right;"> 80.50 </td>
@@ -3222,8 +3251,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 26 </td>
    <td style="text-align:right;"> 187.27 </td>
    <td style="text-align:right;"> 65.89 </td>
@@ -3237,8 +3266,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 27 </td>
    <td style="text-align:right;"> 223.96 </td>
    <td style="text-align:right;"> 86.18 </td>
@@ -3252,8 +3281,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 27 </td>
    <td style="text-align:right;"> 215.81 </td>
    <td style="text-align:right;"> 71.12 </td>
@@ -3267,8 +3296,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 27 </td>
    <td style="text-align:right;"> 200.41 </td>
    <td style="text-align:right;"> 94.75 </td>
@@ -3282,8 +3311,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 27 </td>
    <td style="text-align:right;"> 200.04 </td>
    <td style="text-align:right;"> 88.05 </td>
@@ -3297,8 +3326,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 27 </td>
    <td style="text-align:right;"> 239.52 </td>
    <td style="text-align:right;"> 95.96 </td>
@@ -3312,8 +3341,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 4.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloret de Vistalegre </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 27 </td>
    <td style="text-align:right;"> 232.74 </td>
    <td style="text-align:right;"> 93.54 </td>
@@ -3327,8 +3356,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 4.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Lloseta </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 246.18 </td>
    <td style="text-align:right;"> 180.33 </td>
@@ -3342,8 +3371,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 241.88 </td>
    <td style="text-align:right;"> 155.03 </td>
@@ -3357,8 +3386,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 282.24 </td>
    <td style="text-align:right;"> 144.42 </td>
@@ -3372,8 +3401,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 284.42 </td>
    <td style="text-align:right;"> 130.40 </td>
@@ -3387,8 +3416,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 293.09 </td>
    <td style="text-align:right;"> 198.65 </td>
@@ -3402,8 +3431,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 824.73 </td>
    <td style="text-align:right;"> 2246.55 </td>
@@ -3417,8 +3446,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 1132.36 </td>
    <td style="text-align:right;"> 2641.08 </td>
@@ -3432,8 +3461,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 18.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Lloseta </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 33 </td>
    <td style="text-align:right;"> 1089.85 </td>
    <td style="text-align:right;"> 2543.63 </td>
@@ -3447,8 +3476,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 21.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Llubí </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 208.07 </td>
    <td style="text-align:right;"> 239.19 </td>
@@ -3462,8 +3491,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 184.98 </td>
    <td style="text-align:right;"> 153.39 </td>
@@ -3477,8 +3506,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 217.59 </td>
    <td style="text-align:right;"> 155.74 </td>
@@ -3492,8 +3521,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 226.07 </td>
    <td style="text-align:right;"> 190.76 </td>
@@ -3507,8 +3536,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 233.79 </td>
    <td style="text-align:right;"> 264.84 </td>
@@ -3522,8 +3551,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 552.25 </td>
    <td style="text-align:right;"> 1720.70 </td>
@@ -3537,8 +3566,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 598.53 </td>
    <td style="text-align:right;"> 1693.28 </td>
@@ -3552,8 +3581,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llubí </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 448.89 </td>
    <td style="text-align:right;"> 1345.08 </td>
@@ -3567,8 +3596,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Llucmajor </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 314 </td>
    <td style="text-align:right;"> 321.78 </td>
    <td style="text-align:right;"> 487.35 </td>
@@ -3582,8 +3611,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 314 </td>
    <td style="text-align:right;"> 258.20 </td>
    <td style="text-align:right;"> 242.70 </td>
@@ -3597,8 +3626,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 315 </td>
    <td style="text-align:right;"> 313.47 </td>
    <td style="text-align:right;"> 239.32 </td>
@@ -3612,8 +3641,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 315 </td>
    <td style="text-align:right;"> 367.16 </td>
    <td style="text-align:right;"> 808.69 </td>
@@ -3627,8 +3656,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 372.19 </td>
    <td style="text-align:right;"> 988.66 </td>
@@ -3642,8 +3671,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 1178.62 </td>
    <td style="text-align:right;"> 2721.52 </td>
@@ -3657,8 +3686,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 1622.16 </td>
    <td style="text-align:right;"> 3140.47 </td>
@@ -3672,8 +3701,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 18.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Llucmajor </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 1624.29 </td>
    <td style="text-align:right;"> 3161.08 </td>
@@ -3687,8 +3716,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 21.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Manacor </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 442 </td>
    <td style="text-align:right;"> 251.01 </td>
    <td style="text-align:right;"> 212.64 </td>
@@ -3702,8 +3731,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 442 </td>
    <td style="text-align:right;"> 247.37 </td>
    <td style="text-align:right;"> 200.90 </td>
@@ -3717,8 +3746,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 442 </td>
    <td style="text-align:right;"> 285.84 </td>
    <td style="text-align:right;"> 221.22 </td>
@@ -3732,8 +3761,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 443 </td>
    <td style="text-align:right;"> 350.51 </td>
    <td style="text-align:right;"> 833.99 </td>
@@ -3747,8 +3776,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 443 </td>
    <td style="text-align:right;"> 340.49 </td>
    <td style="text-align:right;"> 844.28 </td>
@@ -3762,8 +3791,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 443 </td>
    <td style="text-align:right;"> 1101.70 </td>
    <td style="text-align:right;"> 2665.70 </td>
@@ -3777,8 +3806,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 443 </td>
    <td style="text-align:right;"> 1170.63 </td>
    <td style="text-align:right;"> 2704.70 </td>
@@ -3792,8 +3821,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Manacor </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 443 </td>
    <td style="text-align:right;"> 1178.35 </td>
    <td style="text-align:right;"> 2725.72 </td>
@@ -3807,8 +3836,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Mancor de la Vall </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 219.89 </td>
    <td style="text-align:right;"> 100.09 </td>
@@ -3822,8 +3851,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 216.50 </td>
    <td style="text-align:right;"> 85.38 </td>
@@ -3837,8 +3866,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 275.36 </td>
    <td style="text-align:right;"> 106.58 </td>
@@ -3852,8 +3881,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 276.14 </td>
    <td style="text-align:right;"> 107.48 </td>
@@ -3867,8 +3896,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 264.33 </td>
    <td style="text-align:right;"> 117.68 </td>
@@ -3882,8 +3911,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 388.14 </td>
    <td style="text-align:right;"> 628.63 </td>
@@ -3897,8 +3926,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 301.54 </td>
    <td style="text-align:right;"> 108.66 </td>
@@ -3912,8 +3941,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 21.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Mancor de la Vall </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 28 </td>
    <td style="text-align:right;"> 289.79 </td>
    <td style="text-align:right;"> 117.18 </td>
@@ -3927,8 +3956,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 21.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Maria de la Salut </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 160.85 </td>
    <td style="text-align:right;"> 73.36 </td>
@@ -3942,8 +3971,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 177.32 </td>
    <td style="text-align:right;"> 85.70 </td>
@@ -3957,8 +3986,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 212.47 </td>
    <td style="text-align:right;"> 94.60 </td>
@@ -3972,8 +4001,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 224.50 </td>
    <td style="text-align:right;"> 116.77 </td>
@@ -3987,8 +4016,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 209.30 </td>
    <td style="text-align:right;"> 109.29 </td>
@@ -4002,8 +4031,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 903.59 </td>
    <td style="text-align:right;"> 2567.45 </td>
@@ -4017,8 +4046,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 901.46 </td>
    <td style="text-align:right;"> 2369.66 </td>
@@ -4032,8 +4061,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Maria de la Salut </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 40 </td>
    <td style="text-align:right;"> 893.32 </td>
    <td style="text-align:right;"> 2339.80 </td>
@@ -4047,8 +4076,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Marratxí </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 351.10 </td>
    <td style="text-align:right;"> 243.92 </td>
@@ -4062,8 +4091,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 298.16 </td>
    <td style="text-align:right;"> 131.77 </td>
@@ -4077,8 +4106,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 365.49 </td>
    <td style="text-align:right;"> 173.20 </td>
@@ -4092,8 +4121,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 520.44 </td>
    <td style="text-align:right;"> 1236.50 </td>
@@ -4107,8 +4136,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 490.47 </td>
    <td style="text-align:right;"> 1262.20 </td>
@@ -4122,8 +4151,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 20.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 2024.03 </td>
    <td style="text-align:right;"> 3569.59 </td>
@@ -4137,8 +4166,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 20.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 1566.71 </td>
    <td style="text-align:right;"> 3080.42 </td>
@@ -4152,8 +4181,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 24.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Marratxí </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 63 </td>
    <td style="text-align:right;"> 1761.22 </td>
    <td style="text-align:right;"> 3182.08 </td>
@@ -4167,8 +4196,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 27.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Montuïri </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 165.34 </td>
    <td style="text-align:right;"> 99.24 </td>
@@ -4182,8 +4211,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 175.00 </td>
    <td style="text-align:right;"> 97.31 </td>
@@ -4197,8 +4226,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 224.73 </td>
    <td style="text-align:right;"> 115.82 </td>
@@ -4212,8 +4241,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 235.41 </td>
    <td style="text-align:right;"> 120.16 </td>
@@ -4227,8 +4256,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 221.17 </td>
    <td style="text-align:right;"> 182.26 </td>
@@ -4242,8 +4271,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 209.93 </td>
    <td style="text-align:right;"> 155.40 </td>
@@ -4257,8 +4286,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 561.90 </td>
    <td style="text-align:right;"> 1787.66 </td>
@@ -4272,8 +4301,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Montuïri </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 30 </td>
    <td style="text-align:right;"> 232.97 </td>
    <td style="text-align:right;"> 136.24 </td>
@@ -4287,8 +4316,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Muro </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 222.21 </td>
    <td style="text-align:right;"> 125.40 </td>
@@ -4302,8 +4331,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 227.06 </td>
    <td style="text-align:right;"> 128.03 </td>
@@ -4317,8 +4346,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 270.53 </td>
    <td style="text-align:right;"> 150.93 </td>
@@ -4332,8 +4361,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 353.45 </td>
    <td style="text-align:right;"> 941.00 </td>
@@ -4347,8 +4376,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 329.51 </td>
    <td style="text-align:right;"> 945.99 </td>
@@ -4362,8 +4391,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 582.92 </td>
    <td style="text-align:right;"> 1792.93 </td>
@@ -4377,8 +4406,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 814.51 </td>
    <td style="text-align:right;"> 2135.79 </td>
@@ -4392,8 +4421,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Muro </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 219 </td>
    <td style="text-align:right;"> 849.41 </td>
    <td style="text-align:right;"> 2195.48 </td>
@@ -4407,8 +4436,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Palma de Mallorca </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 503 </td>
    <td style="text-align:right;"> 268.57 </td>
    <td style="text-align:right;"> 382.26 </td>
@@ -4422,8 +4451,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 29.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 503 </td>
    <td style="text-align:right;"> 226.41 </td>
    <td style="text-align:right;"> 199.31 </td>
@@ -4437,8 +4466,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 31.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 503 </td>
    <td style="text-align:right;"> 296.85 </td>
    <td style="text-align:right;"> 249.05 </td>
@@ -4452,8 +4481,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 35.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 503 </td>
    <td style="text-align:right;"> 312.27 </td>
    <td style="text-align:right;"> 529.55 </td>
@@ -4467,8 +4496,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 40.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 505 </td>
    <td style="text-align:right;"> 274.16 </td>
    <td style="text-align:right;"> 550.10 </td>
@@ -4482,8 +4511,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 43.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 505 </td>
    <td style="text-align:right;"> 442.76 </td>
    <td style="text-align:right;"> 1339.07 </td>
@@ -4497,8 +4526,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 43.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 505 </td>
    <td style="text-align:right;"> 519.51 </td>
    <td style="text-align:right;"> 1351.50 </td>
@@ -4512,8 +4541,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 47.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Palma de Mallorca </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 505 </td>
    <td style="text-align:right;"> 517.49 </td>
    <td style="text-align:right;"> 1377.66 </td>
@@ -4527,8 +4556,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 53.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Petra </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 275.97 </td>
    <td style="text-align:right;"> 190.70 </td>
@@ -4542,8 +4571,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 2.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 269.87 </td>
    <td style="text-align:right;"> 173.96 </td>
@@ -4557,8 +4586,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 293.43 </td>
    <td style="text-align:right;"> 161.77 </td>
@@ -4572,8 +4601,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 312.08 </td>
    <td style="text-align:right;"> 204.31 </td>
@@ -4587,8 +4616,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 292.37 </td>
    <td style="text-align:right;"> 222.17 </td>
@@ -4602,8 +4631,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 1858.84 </td>
    <td style="text-align:right;"> 3496.28 </td>
@@ -4617,8 +4646,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 2053.60 </td>
    <td style="text-align:right;"> 3629.39 </td>
@@ -4632,8 +4661,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Petra </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 78 </td>
    <td style="text-align:right;"> 1584.40 </td>
    <td style="text-align:right;"> 3182.15 </td>
@@ -4647,8 +4676,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Pollença </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 1593 </td>
    <td style="text-align:right;"> 270.42 </td>
    <td style="text-align:right;"> 487.09 </td>
@@ -4662,8 +4691,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 1593 </td>
    <td style="text-align:right;"> 249.96 </td>
    <td style="text-align:right;"> 252.47 </td>
@@ -4677,8 +4706,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 1592 </td>
    <td style="text-align:right;"> 319.14 </td>
    <td style="text-align:right;"> 353.99 </td>
@@ -4692,8 +4721,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 1593 </td>
    <td style="text-align:right;"> 303.21 </td>
    <td style="text-align:right;"> 363.51 </td>
@@ -4707,8 +4736,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 1595 </td>
    <td style="text-align:right;"> 288.70 </td>
    <td style="text-align:right;"> 394.20 </td>
@@ -4722,8 +4751,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 1593 </td>
    <td style="text-align:right;"> 965.46 </td>
    <td style="text-align:right;"> 2455.13 </td>
@@ -4737,8 +4766,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 1593 </td>
    <td style="text-align:right;"> 1262.98 </td>
    <td style="text-align:right;"> 2777.98 </td>
@@ -4752,8 +4781,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Pollença </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 1593 </td>
    <td style="text-align:right;"> 1242.19 </td>
    <td style="text-align:right;"> 2741.79 </td>
@@ -4767,8 +4796,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Porreres </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 53 </td>
    <td style="text-align:right;"> 298.34 </td>
    <td style="text-align:right;"> 481.94 </td>
@@ -4782,8 +4811,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 53 </td>
    <td style="text-align:right;"> 240.62 </td>
    <td style="text-align:right;"> 260.35 </td>
@@ -4797,8 +4826,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 54 </td>
    <td style="text-align:right;"> 254.13 </td>
    <td style="text-align:right;"> 168.15 </td>
@@ -4812,8 +4841,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 54 </td>
    <td style="text-align:right;"> 432.96 </td>
    <td style="text-align:right;"> 1335.36 </td>
@@ -4827,8 +4856,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 54 </td>
    <td style="text-align:right;"> 486.09 </td>
    <td style="text-align:right;"> 1397.63 </td>
@@ -4842,8 +4871,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 53 </td>
    <td style="text-align:right;"> 1212.04 </td>
    <td style="text-align:right;"> 2934.00 </td>
@@ -4857,8 +4886,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 53 </td>
    <td style="text-align:right;"> 1006.43 </td>
    <td style="text-align:right;"> 2601.50 </td>
@@ -4872,8 +4901,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Porreres </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 53 </td>
    <td style="text-align:right;"> 1154.74 </td>
    <td style="text-align:right;"> 2822.62 </td>
@@ -4887,8 +4916,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Puigpunyent </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 247.87 </td>
    <td style="text-align:right;"> 147.55 </td>
@@ -4902,8 +4931,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 21.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 274.04 </td>
    <td style="text-align:right;"> 159.92 </td>
@@ -4917,8 +4946,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 22.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 279.62 </td>
    <td style="text-align:right;"> 160.06 </td>
@@ -4932,8 +4961,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 23.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 713.68 </td>
    <td style="text-align:right;"> 2078.57 </td>
@@ -4947,8 +4976,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 30.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 687.00 </td>
    <td style="text-align:right;"> 2038.91 </td>
@@ -4962,8 +4991,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 33.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 1051.74 </td>
    <td style="text-align:right;"> 2672.62 </td>
@@ -4977,8 +5006,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 33.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 1161.22 </td>
    <td style="text-align:right;"> 2792.91 </td>
@@ -4992,8 +5021,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 35.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Puigpunyent </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 23 </td>
    <td style="text-align:right;"> 1130.13 </td>
    <td style="text-align:right;"> 2802.04 </td>
@@ -5007,8 +5036,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 38.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Sa Pobla </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 171 </td>
    <td style="text-align:right;"> 296.75 </td>
    <td style="text-align:right;"> 765.26 </td>
@@ -5022,8 +5051,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 171 </td>
    <td style="text-align:right;"> 220.55 </td>
    <td style="text-align:right;"> 120.43 </td>
@@ -5037,8 +5066,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 5.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 171 </td>
    <td style="text-align:right;"> 274.99 </td>
    <td style="text-align:right;"> 160.03 </td>
@@ -5052,8 +5081,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 171 </td>
    <td style="text-align:right;"> 380.95 </td>
    <td style="text-align:right;"> 1063.66 </td>
@@ -5067,8 +5096,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 171 </td>
    <td style="text-align:right;"> 376.96 </td>
    <td style="text-align:right;"> 1075.20 </td>
@@ -5082,8 +5111,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 171 </td>
    <td style="text-align:right;"> 852.52 </td>
    <td style="text-align:right;"> 2295.81 </td>
@@ -5097,8 +5126,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 171 </td>
    <td style="text-align:right;"> 922.50 </td>
    <td style="text-align:right;"> 2318.16 </td>
@@ -5112,8 +5141,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sa Pobla </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 170 </td>
    <td style="text-align:right;"> 796.82 </td>
    <td style="text-align:right;"> 2088.67 </td>
@@ -5127,8 +5156,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Sant Joan </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 202.75 </td>
    <td style="text-align:right;"> 102.16 </td>
@@ -5142,8 +5171,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 189.92 </td>
    <td style="text-align:right;"> 81.91 </td>
@@ -5157,8 +5186,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 3.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 206.17 </td>
    <td style="text-align:right;"> 97.25 </td>
@@ -5172,8 +5201,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 210.52 </td>
    <td style="text-align:right;"> 95.52 </td>
@@ -5187,8 +5216,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 257.82 </td>
    <td style="text-align:right;"> 144.53 </td>
@@ -5202,8 +5231,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 642.70 </td>
    <td style="text-align:right;"> 2042.45 </td>
@@ -5217,8 +5246,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 581.17 </td>
    <td style="text-align:right;"> 1619.45 </td>
@@ -5232,8 +5261,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Joan </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 24 </td>
    <td style="text-align:right;"> 559.08 </td>
    <td style="text-align:right;"> 1587.09 </td>
@@ -5247,8 +5276,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 18.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Sant Llorenç des Cardassar </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 210.97 </td>
    <td style="text-align:right;"> 175.20 </td>
@@ -5262,8 +5291,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 209.29 </td>
    <td style="text-align:right;"> 173.63 </td>
@@ -5277,8 +5306,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 259.39 </td>
    <td style="text-align:right;"> 217.11 </td>
@@ -5292,8 +5321,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 322.72 </td>
    <td style="text-align:right;"> 816.41 </td>
@@ -5307,8 +5336,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 292.77 </td>
    <td style="text-align:right;"> 809.08 </td>
@@ -5322,8 +5351,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 892.55 </td>
    <td style="text-align:right;"> 2420.32 </td>
@@ -5337,8 +5366,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 1104.73 </td>
    <td style="text-align:right;"> 2640.87 </td>
@@ -5352,8 +5381,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sant Llorenç des Cardassar </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 157 </td>
    <td style="text-align:right;"> 1077.53 </td>
    <td style="text-align:right;"> 2620.49 </td>
@@ -5367,8 +5396,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Santa Eugènia </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 258.17 </td>
    <td style="text-align:right;"> 145.59 </td>
@@ -5382,8 +5411,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 266.00 </td>
    <td style="text-align:right;"> 147.18 </td>
@@ -5397,8 +5426,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 282.17 </td>
    <td style="text-align:right;"> 129.55 </td>
@@ -5412,8 +5441,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 282.33 </td>
    <td style="text-align:right;"> 132.78 </td>
@@ -5427,8 +5456,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 227.00 </td>
    <td style="text-align:right;"> 140.88 </td>
@@ -5442,8 +5471,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 1693.33 </td>
    <td style="text-align:right;"> 3580.63 </td>
@@ -5457,8 +5486,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 2054.20 </td>
    <td style="text-align:right;"> 3883.77 </td>
@@ -5472,8 +5501,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Eugènia </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 6 </td>
    <td style="text-align:right;"> 1778.33 </td>
    <td style="text-align:right;"> 3539.36 </td>
@@ -5487,8 +5516,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Santa Margalida </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 186.97 </td>
    <td style="text-align:right;"> 155.61 </td>
@@ -5502,8 +5531,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 186.47 </td>
    <td style="text-align:right;"> 156.93 </td>
@@ -5517,8 +5546,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 227.61 </td>
    <td style="text-align:right;"> 194.13 </td>
@@ -5532,8 +5561,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 252.82 </td>
    <td style="text-align:right;"> 524.11 </td>
@@ -5547,8 +5576,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 233.22 </td>
    <td style="text-align:right;"> 523.63 </td>
@@ -5562,8 +5591,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 873.96 </td>
    <td style="text-align:right;"> 2394.95 </td>
@@ -5577,8 +5606,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 1004.64 </td>
    <td style="text-align:right;"> 2522.56 </td>
@@ -5592,8 +5621,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa Margalida </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 405 </td>
    <td style="text-align:right;"> 1015.28 </td>
    <td style="text-align:right;"> 2555.07 </td>
@@ -5607,8 +5636,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Santa María del Camí </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 402.29 </td>
    <td style="text-align:right;"> 565.66 </td>
@@ -5622,8 +5651,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 423.33 </td>
    <td style="text-align:right;"> 649.19 </td>
@@ -5637,8 +5666,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 344.58 </td>
    <td style="text-align:right;"> 171.73 </td>
@@ -5652,8 +5681,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 568.95 </td>
    <td style="text-align:right;"> 1105.32 </td>
@@ -5667,8 +5696,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 467.45 </td>
    <td style="text-align:right;"> 569.92 </td>
@@ -5682,8 +5711,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 790.45 </td>
    <td style="text-align:right;"> 1975.04 </td>
@@ -5697,8 +5726,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 887.50 </td>
    <td style="text-align:right;"> 2005.12 </td>
@@ -5712,8 +5741,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santa María del Camí </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 21 </td>
    <td style="text-align:right;"> 872.24 </td>
    <td style="text-align:right;"> 1956.01 </td>
@@ -5727,8 +5756,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Santanyí </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 661 </td>
    <td style="text-align:right;"> 338.40 </td>
    <td style="text-align:right;"> 541.52 </td>
@@ -5742,8 +5771,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 661 </td>
    <td style="text-align:right;"> 308.97 </td>
    <td style="text-align:right;"> 326.87 </td>
@@ -5757,8 +5786,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 661 </td>
    <td style="text-align:right;"> 327.92 </td>
    <td style="text-align:right;"> 373.01 </td>
@@ -5772,8 +5801,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 661 </td>
    <td style="text-align:right;"> 326.24 </td>
    <td style="text-align:right;"> 461.96 </td>
@@ -5787,8 +5816,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 661 </td>
    <td style="text-align:right;"> 356.51 </td>
    <td style="text-align:right;"> 395.27 </td>
@@ -5802,8 +5831,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 661 </td>
    <td style="text-align:right;"> 1258.44 </td>
    <td style="text-align:right;"> 2735.88 </td>
@@ -5817,8 +5846,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 660 </td>
    <td style="text-align:right;"> 1382.57 </td>
    <td style="text-align:right;"> 2904.28 </td>
@@ -5832,8 +5861,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Santanyí </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 660 </td>
    <td style="text-align:right;"> 1322.05 </td>
    <td style="text-align:right;"> 2840.52 </td>
@@ -5847,8 +5876,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Selva </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 169 </td>
    <td style="text-align:right;"> 256.49 </td>
    <td style="text-align:right;"> 187.73 </td>
@@ -5862,8 +5891,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 169 </td>
    <td style="text-align:right;"> 255.16 </td>
    <td style="text-align:right;"> 181.16 </td>
@@ -5877,8 +5906,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 6.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 169 </td>
    <td style="text-align:right;"> 298.62 </td>
    <td style="text-align:right;"> 230.54 </td>
@@ -5892,8 +5921,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 169 </td>
    <td style="text-align:right;"> 461.62 </td>
    <td style="text-align:right;"> 1304.33 </td>
@@ -5907,8 +5936,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 169 </td>
    <td style="text-align:right;"> 447.46 </td>
    <td style="text-align:right;"> 1315.00 </td>
@@ -5922,8 +5951,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 169 </td>
    <td style="text-align:right;"> 839.79 </td>
    <td style="text-align:right;"> 2239.51 </td>
@@ -5937,8 +5966,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 168 </td>
    <td style="text-align:right;"> 929.08 </td>
    <td style="text-align:right;"> 2353.00 </td>
@@ -5952,8 +5981,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Selva </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 169 </td>
    <td style="text-align:right;"> 973.11 </td>
    <td style="text-align:right;"> 2427.13 </td>
@@ -5967,8 +5996,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Sencelles </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 259.61 </td>
    <td style="text-align:right;"> 169.60 </td>
@@ -5982,8 +6011,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 266.28 </td>
    <td style="text-align:right;"> 175.01 </td>
@@ -5997,8 +6026,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 14.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 312.83 </td>
    <td style="text-align:right;"> 199.14 </td>
@@ -6012,8 +6041,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 18.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 459.42 </td>
    <td style="text-align:right;"> 1210.47 </td>
@@ -6027,8 +6056,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 433.05 </td>
    <td style="text-align:right;"> 1241.78 </td>
@@ -6042,8 +6071,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 22.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 1481.58 </td>
    <td style="text-align:right;"> 3067.94 </td>
@@ -6057,8 +6086,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 22.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 1182.74 </td>
    <td style="text-align:right;"> 2572.53 </td>
@@ -6072,8 +6101,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 23.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sencelles </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 67 </td>
    <td style="text-align:right;"> 1626.55 </td>
    <td style="text-align:right;"> 3105.56 </td>
@@ -6087,8 +6116,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 27.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Ses Salines </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 192.75 </td>
    <td style="text-align:right;"> 120.75 </td>
@@ -6102,8 +6131,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 193.63 </td>
    <td style="text-align:right;"> 110.89 </td>
@@ -6117,8 +6146,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 10.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 251.59 </td>
    <td style="text-align:right;"> 173.50 </td>
@@ -6132,8 +6161,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 251.38 </td>
    <td style="text-align:right;"> 169.13 </td>
@@ -6147,8 +6176,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 18.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 216.20 </td>
    <td style="text-align:right;"> 162.75 </td>
@@ -6162,8 +6191,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 19.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 747.99 </td>
    <td style="text-align:right;"> 2138.20 </td>
@@ -6177,8 +6206,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 20.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 1136.37 </td>
    <td style="text-align:right;"> 2725.01 </td>
@@ -6192,8 +6221,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 23.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Ses Salines </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 117 </td>
    <td style="text-align:right;"> 1129.72 </td>
    <td style="text-align:right;"> 2742.06 </td>
@@ -6207,8 +6236,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 26.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Sineu </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 204.30 </td>
    <td style="text-align:right;"> 147.00 </td>
@@ -6222,8 +6251,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 58 </td>
    <td style="text-align:right;"> 207.86 </td>
    <td style="text-align:right;"> 136.53 </td>
@@ -6237,8 +6266,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 234.82 </td>
    <td style="text-align:right;"> 145.71 </td>
@@ -6252,8 +6281,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 9.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 245.79 </td>
    <td style="text-align:right;"> 185.68 </td>
@@ -6267,8 +6296,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 231.40 </td>
    <td style="text-align:right;"> 152.68 </td>
@@ -6282,8 +6311,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 1066.12 </td>
    <td style="text-align:right;"> 2706.24 </td>
@@ -6297,8 +6326,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 1119.89 </td>
    <td style="text-align:right;"> 2727.77 </td>
@@ -6312,8 +6341,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sineu </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 57 </td>
    <td style="text-align:right;"> 934.49 </td>
    <td style="text-align:right;"> 2451.51 </td>
@@ -6327,8 +6356,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Son Servera </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 226.55 </td>
    <td style="text-align:right;"> 188.69 </td>
@@ -6342,8 +6371,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 225.99 </td>
    <td style="text-align:right;"> 182.56 </td>
@@ -6357,8 +6386,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 7.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 283.74 </td>
    <td style="text-align:right;"> 237.52 </td>
@@ -6372,8 +6401,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 8.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 402.55 </td>
    <td style="text-align:right;"> 1107.96 </td>
@@ -6387,8 +6416,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 386.83 </td>
    <td style="text-align:right;"> 1112.16 </td>
@@ -6402,8 +6431,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 1189.89 </td>
    <td style="text-align:right;"> 2794.36 </td>
@@ -6417,8 +6446,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 1617.18 </td>
    <td style="text-align:right;"> 3210.93 </td>
@@ -6432,8 +6461,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Son Servera </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 159 </td>
    <td style="text-align:right;"> 1506.65 </td>
    <td style="text-align:right;"> 3087.20 </td>
@@ -6447,8 +6476,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Sóller </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 314 </td>
    <td style="text-align:right;"> 275.26 </td>
    <td style="text-align:right;"> 324.08 </td>
@@ -6462,8 +6491,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 26.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 283.61 </td>
    <td style="text-align:right;"> 319.95 </td>
@@ -6477,8 +6506,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 28.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 312 </td>
    <td style="text-align:right;"> 336.66 </td>
    <td style="text-align:right;"> 407.44 </td>
@@ -6492,8 +6521,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 32.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 312 </td>
    <td style="text-align:right;"> 322.70 </td>
    <td style="text-align:right;"> 354.24 </td>
@@ -6507,8 +6536,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 36.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 312 </td>
    <td style="text-align:right;"> 263.06 </td>
    <td style="text-align:right;"> 262.38 </td>
@@ -6522,8 +6551,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 38.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 710.30 </td>
    <td style="text-align:right;"> 1948.87 </td>
@@ -6537,8 +6566,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 39.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 985.88 </td>
    <td style="text-align:right;"> 2306.90 </td>
@@ -6552,8 +6581,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 44.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Sóller </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 313 </td>
    <td style="text-align:right;"> 990.88 </td>
    <td style="text-align:right;"> 2330.13 </td>
@@ -6567,8 +6596,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 49.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Valldemossa </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 265.07 </td>
    <td style="text-align:right;"> 229.96 </td>
@@ -6582,8 +6611,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 34.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 279.96 </td>
    <td style="text-align:right;"> 217.52 </td>
@@ -6597,8 +6626,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 36.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 328.65 </td>
    <td style="text-align:right;"> 243.19 </td>
@@ -6612,8 +6641,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 44.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 340.02 </td>
    <td style="text-align:right;"> 251.83 </td>
@@ -6627,8 +6656,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 50.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 290.35 </td>
    <td style="text-align:right;"> 252.83 </td>
@@ -6642,8 +6671,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 56.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 288.32 </td>
    <td style="text-align:right;"> 205.49 </td>
@@ -6657,8 +6686,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 56.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 338.98 </td>
    <td style="text-align:right;"> 263.20 </td>
@@ -6672,8 +6701,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 60.5 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Valldemossa </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 56 </td>
    <td style="text-align:right;"> 346.77 </td>
    <td style="text-align:right;"> 260.55 </td>
@@ -6687,8 +6716,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 64.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2023-12-17 </td>
+   <td style="text-align:left;font-weight: bold;vertical-align: top !important;" rowspan="8"> Vilafranc de Bonany </td>
+   <td style="text-align:center;"> 2023-12-17 </td>
    <td style="text-align:right;"> 26 </td>
    <td style="text-align:right;"> 220.65 </td>
    <td style="text-align:right;"> 81.68 </td>
@@ -6702,8 +6731,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 11.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2024-03-23 </td>
+   
+   <td style="text-align:center;"> 2024-03-23 </td>
    <td style="text-align:right;"> 26 </td>
    <td style="text-align:right;"> 227.62 </td>
    <td style="text-align:right;"> 117.94 </td>
@@ -6717,8 +6746,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 12.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2024-06-19 </td>
+   
+   <td style="text-align:center;"> 2024-06-19 </td>
    <td style="text-align:right;"> 26 </td>
    <td style="text-align:right;"> 271.46 </td>
    <td style="text-align:right;"> 137.98 </td>
@@ -6732,8 +6761,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2024-09-13 </td>
+   
+   <td style="text-align:center;"> 2024-09-13 </td>
    <td style="text-align:right;"> 25 </td>
    <td style="text-align:right;"> 283.79 </td>
    <td style="text-align:right;"> 137.40 </td>
@@ -6747,8 +6776,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 13.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2024-12-14 </td>
+   
+   <td style="text-align:center;"> 2024-12-14 </td>
    <td style="text-align:right;"> 25 </td>
    <td style="text-align:right;"> 270.36 </td>
    <td style="text-align:right;"> 127.35 </td>
@@ -6762,8 +6791,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 15.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2025-03-07 </td>
+   
+   <td style="text-align:center;"> 2025-03-07 </td>
    <td style="text-align:right;"> 25 </td>
    <td style="text-align:right;"> 643.12 </td>
    <td style="text-align:right;"> 1784.13 </td>
@@ -6777,8 +6806,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 16.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2025-06-15 </td>
+   
+   <td style="text-align:center;"> 2025-06-15 </td>
    <td style="text-align:right;"> 25 </td>
    <td style="text-align:right;"> 638.52 </td>
    <td style="text-align:right;"> 1746.61 </td>
@@ -6792,8 +6821,8 @@ resumen_p1 %>%
    <td style="text-align:right;"> 17.0 </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> Vilafranc de Bonany </td>
-   <td style="text-align:left;"> 2025-09-21 </td>
+   
+   <td style="text-align:center;"> 2025-09-21 </td>
    <td style="text-align:right;"> 25 </td>
    <td style="text-align:right;"> 304.16 </td>
    <td style="text-align:right;"> 164.20 </td>
@@ -6816,11 +6845,165 @@ resumen_p1 %>%
 
 
 
+
 ## Pregunta 2 (**1punto**)
 
 Consideremos las variables `price` y `number_of_reviews` de Pollença y Palma del periodo "2024-09-13", del fichero `listing_common0_select.RData`. 
-Estudiad si estos datos se aproximan a una distribución normal gráficamente. Para ello, dibujad el histograma, la función "kernel-density" que aproxima la densidad y la densidad de la normal de media y varianza las de las muestras de las variables `price` (para precios mayores de 50 y menores de 400) y `number_of_reviews` para Palma y 	
-Pollença
+Estudiad si estos datos se aproximan a una distribución normal gráficamente. Para ello, dibujad el histograma, la función "kernel-density" que aproxima la densidad y la densidad de la normal de media y varianza las de las muestras de las variables `price` (para precios mayores de 50 y menores de 400) y `number_of_reviews` para Palma y Pollença
+
+
+
+::: {.cell}
+
+```{.r .cell-code}
+library(dplyr)
+library(ggplot2)
+
+# -------------------------------------------------------------------
+# Supongo que ya tienes 'listings0' creado con la columna 'date'.
+# Si lo cargas de otro fichero (p.ej. listing_common0_select.RData),
+# simplemente asegúrate de que se llama 'listings0' y tiene:
+#   - date
+#   - neighbourhood_cleansed
+#   - price
+#   - number_of_reviews
+# -------------------------------------------------------------------
+
+# 1) Filtrar solo la fecha y los municipios de interés
+datos_2 <- listings0 %>%
+  filter(
+    date == as.Date("2024-09-13"),
+    neighbourhood_cleansed %in% c("Pollença", "Palma de Mallorca")
+  )
+
+# 2) Para PRICE solo queremos precios entre 50 y 400 €
+datos_price <- datos_2 %>%
+  filter(price > 50, price < 400)
+
+# ----------------- FUNCIONES AUXILIARES DE GRÁFICO -----------------
+
+# Histograma + densidad kernel + curva normal (misma media y sd) para PRICE
+grafico_price <- function(df, titulo) {
+  m <- mean(df$price, na.rm = TRUE)
+  s <- sd(df$price, na.rm = TRUE)
+  
+  # Secuencia de x y densidad normal teórica
+  x_seq <- seq(
+    from = min(df$price, na.rm = TRUE),
+    to   = max(df$price, na.rm = TRUE),
+    length.out = 400
+  )
+  normal_df <- data.frame(
+    x    = x_seq,
+    dens = dnorm(x_seq, mean = m, sd = s)
+  )
+  
+  ggplot(df, aes(x = price)) +
+    geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.4) +
+    geom_density(linewidth = 1) +
+    geom_line(data = normal_df, aes(x = x, y = dens),
+              linewidth = 1, linetype = "dashed") +
+    labs(
+      title = titulo,
+      x = "Precio por noche (€)",
+      y = "Densidad"
+    ) +
+    theme_minimal()
+}
+
+# Histograma + densidad kernel + curva normal para NUMBER_OF_REVIEWS
+grafico_reviews <- function(df, titulo) {
+  m <- mean(df$number_of_reviews, na.rm = TRUE)
+  s <- sd(df$number_of_reviews,   na.rm = TRUE)
+  
+  x_seq <- seq(
+    from = min(df$number_of_reviews, na.rm = TRUE),
+    to   = max(df$number_of_reviews, na.rm = TRUE),
+    length.out = 400
+  )
+  normal_df <- data.frame(
+    x    = x_seq,
+    dens = dnorm(x_seq, mean = m, sd = s)
+  )
+  
+  ggplot(df, aes(x = number_of_reviews)) +
+    geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.4) +
+    geom_density(linewidth = 1) +
+    geom_line(data = normal_df, aes(x = x, y = dens),
+              linewidth = 1, linetype = "dashed") +
+    labs(
+      title = titulo,
+      x = "Número de reviews",
+      y = "Densidad"
+    ) +
+    theme_minimal()
+}
+
+# ----------------- SEPARAR DATOS POR MUNICIPIO -----------------
+
+# Palma de Mallorca
+palma_price <- datos_price %>%
+  filter(neighbourhood_cleansed == "Palma de Mallorca")
+palma_rev <- datos_2 %>%
+  filter(neighbourhood_cleansed == "Palma de Mallorca")
+
+# Pollença
+pollenca_price <- datos_price %>%
+  filter(neighbourhood_cleansed == "Pollença")
+pollenca_rev <- datos_2 %>%
+  filter(neighbourhood_cleansed == "Pollença")
+
+# ----------------- GRÁFICOS A MOSTRAR EN EL INFORME -----------------
+
+# 1) PRICE (50–400 €) Palma
+grafico_price(
+  palma_price,
+  "Palma de Mallorca – price (50–400 €), 2024-09-13"
+)
+```
+
+::: {.cell-output-display}
+![](ENUNCIADO_taller_EVALUABLE_ABB_files/figure-html/pregunta2-1.png){width=672}
+:::
+
+```{.r .cell-code}
+# 2) PRICE (50–400 €) Pollença
+grafico_price(
+  pollenca_price,
+  "Pollença – price (50–400 €), 2024-09-13"
+)
+```
+
+::: {.cell-output-display}
+![](ENUNCIADO_taller_EVALUABLE_ABB_files/figure-html/pregunta2-2.png){width=672}
+:::
+
+```{.r .cell-code}
+# 3) NUMBER_OF_REVIEWS Palma
+grafico_reviews(
+  palma_rev,
+  "Palma de Mallorca – number_of_reviews, 2024-09-13"
+)
+```
+
+::: {.cell-output-display}
+![](ENUNCIADO_taller_EVALUABLE_ABB_files/figure-html/pregunta2-3.png){width=672}
+:::
+
+```{.r .cell-code}
+# 4) NUMBER_OF_REVIEWS Pollença
+grafico_reviews(
+  pollenca_rev,
+  "Pollença – number_of_reviews, 2024-09-13"
+)
+```
+
+::: {.cell-output-display}
+![](ENUNCIADO_taller_EVALUABLE_ABB_files/figure-html/pregunta2-4.png){width=672}
+:::
+:::
+
+
 
 ## Pregunta 3 (**1punto**)
 
