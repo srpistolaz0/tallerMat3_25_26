@@ -21,6 +21,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
                       warning = FALSE,cache=FALSE)
 # packages
 library(tidyverse)
+library(kableExtra)
 ```
 
 # Instrucciones para el taller
@@ -98,7 +99,6 @@ table(table(listings0$id))
 ```
 
 
-
 Notemos que cada apartamento:
 
 -   queda identificado por id y por date que nos da el periodo en la que apareció el dato.
@@ -159,6 +159,65 @@ Del fichero con los datos de listings `listings0` calcula los estadísticos desc
 
 Presenta los resultados con una tabla de kableExtra.
 
+```{r preg1, message=FALSE, warning=FALSE}
+# ---------------------------------------------------------------
+# PREGUNTA 1
+# Estadísticos descriptivos de:
+#   - price
+#   - number_of_reviews
+# agrupados por:
+#   - municipio (neighbourhood_cleansed)
+#   - periodo (date)
+# Tabla de salida con kableExtra
+# ---------------------------------------------------------------
+
+# IMPORTANTE:
+# Aquí asumimos que:
+#  - listings0 ya está creado según el enunciado
+#  - listings0 tiene la columna 'date'
+#  - 'price' es numérica (si no lo es, habría que convertirla en otro chunk)
+
+# 1. Calcular los estadísticos descriptivos por municipio y periodo.
+#    group_by(): forma grupos por municipio y fecha de scraping
+#    summarise(): calcula los resúmenes para cada grupo
+resumen_p1 <- listings0 %>%
+  group_by(neighbourhood_cleansed, date) %>%
+  summarise(
+    # Tamaño de muestra en cada grupo
+    n = n(),
+    
+    # ---- Estadísticos para 'price' ----
+    mean_price = mean(price, na.rm = TRUE),              # media
+    sd_price   = sd(price, na.rm = TRUE),                # desviación estándar
+    min_price  = min(price, na.rm = TRUE),               # mínimo
+    q1_price   = quantile(price, 0.25, na.rm = TRUE),    # cuartil 1
+    med_price  = median(price, na.rm = TRUE),            # mediana
+    q3_price   = quantile(price, 0.75, na.rm = TRUE),    # cuartil 3
+    max_price  = max(price, na.rm = TRUE),               # máximo
+    
+    # ---- Estadísticos para 'number_of_reviews' ----
+    mean_reviews = mean(number_of_reviews, na.rm = TRUE),   # media
+    sd_reviews   = sd(number_of_reviews, na.rm = TRUE),     # desviación estándar
+    med_reviews  = median(number_of_reviews, na.rm = TRUE), # mediana
+    
+    # Indicar a dplyr que "desagrupe" al terminar
+    .groups = "drop"
+  )
+
+# (Opcional) ver una muestra de la tabla en la consola
+# head(resumen_p1)
+
+# 2. Ordenar y mostrar la tabla con kableExtra
+resumen_p1 %>%
+  arrange(neighbourhood_cleansed, date) %>%   # ordena por municipio y fecha
+  kbl(
+    caption = "Estadísticos descriptivos de price y number_of_reviews por municipio y periodo",
+    digits = 2                                # redondear a 2 decimales
+  ) %>%
+  kable_styling(full_width = FALSE)           # tabla más estrecha y centrada
+
+```
+
 ## Pregunta 2 (**1punto**)
 
 Consideremos las variables `price` y `number_of_reviews` de Pollença y Palma del periodo "2024-09-13", del fichero `listing_common0_select.RData`. 
@@ -168,6 +227,7 @@ Pollença
 ## Pregunta 3 (**1punto**)
 
 Con los datos de `listings0` de todos los periodos, contrastar si la media del precio en Alcudia es igual a la de Palma **contra** que es mayor que en Palma para los precios mayores que 50 euros y menores de 400. Construid la hipótesis nula y alternativa, calculad el $p$-valor y el intervalo de confianza asociado al contraste. Justifica técnicamente la conclusión del contraste.
+
 
 ## Pregunta 4 (**1punto**)
 
