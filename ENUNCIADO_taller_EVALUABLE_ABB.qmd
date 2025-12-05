@@ -248,19 +248,17 @@ tabla_p1 %>%
 Consideremos las variables `price` y `number_of_reviews` de Pollença y Palma del periodo "2024-09-13", del fichero `listing_common0_select.RData`. 
 Estudiad si estos datos se aproximan a una distribución normal gráficamente. Para ello, dibujad el histograma, la función "kernel-density" que aproxima la densidad y la densidad de la normal de media y varianza las de las muestras de las variables `price` (para precios mayores de 50 y menores de 400) y `number_of_reviews` para Palma y Pollença
 
-```{r pregunta2, message=FALSE, warning=FALSE}
+```{r pregunta2_completa, message=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
+library(patchwork)   # si no lo tienes: install.packages("patchwork")
 
-# -------------------------------------------------------------------
-# Supongo que ya tienes 'listings0' creado con la columna 'date'.
-# Si lo cargas de otro fichero (p.ej. listing_common0_select.RData),
-# simplemente asegúrate de que se llama 'listings0' y tiene:
-#   - date
-#   - neighbourhood_cleansed
-#   - price
-#   - number_of_reviews
-# -------------------------------------------------------------------
+#------------------------------------------------------------------
+# Supuesto: ya has cargado el fichero listing_common0_select.RData
+# y tienes un data frame llamado 'listings0' con columnas:
+#   date, neighbourhood_cleansed, price, number_of_reviews
+# Si se llama distinto, simplemente adapta el nombre aquí.
+#------------------------------------------------------------------
 
 # 1) Filtrar solo la fecha y los municipios de interés
 datos_2 <- listings0 %>%
@@ -269,108 +267,179 @@ datos_2 <- listings0 %>%
     neighbourhood_cleansed %in% c("Pollença", "Palma de Mallorca")
   )
 
-# 2) Para PRICE solo queremos precios entre 50 y 400 €
+# 2) Para price solo queremos precios entre 50 y 400 €
 datos_price <- datos_2 %>%
   filter(price > 50, price < 400)
 
-# ----------------- FUNCIONES AUXILIARES DE GRÁFICO -----------------
-
-# Histograma + densidad kernel + curva normal (misma media y sd) para PRICE
-grafico_price <- function(df, titulo) {
-  m <- mean(df$price, na.rm = TRUE)
-  s <- sd(df$price, na.rm = TRUE)
-  
-  # Secuencia de x y densidad normal teórica
-  x_seq <- seq(
-    from = min(df$price, na.rm = TRUE),
-    to   = max(df$price, na.rm = TRUE),
-    length.out = 400
-  )
-  normal_df <- data.frame(
-    x    = x_seq,
-    dens = dnorm(x_seq, mean = m, sd = s)
-  )
-  
-  ggplot(df, aes(x = price)) +
-    geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.4) +
-    geom_density(linewidth = 1) +
-    geom_line(data = normal_df, aes(x = x, y = dens),
-              linewidth = 1, linetype = "dashed") +
-    labs(
-      title = titulo,
-      x = "Precio por noche (€)",
-      y = "Densidad"
-    ) +
-    theme_minimal()
-}
-
-# Histograma + densidad kernel + curva normal para NUMBER_OF_REVIEWS
-grafico_reviews <- function(df, titulo) {
-  m <- mean(df$number_of_reviews, na.rm = TRUE)
-  s <- sd(df$number_of_reviews,   na.rm = TRUE)
-  
-  x_seq <- seq(
-    from = min(df$number_of_reviews, na.rm = TRUE),
-    to   = max(df$number_of_reviews, na.rm = TRUE),
-    length.out = 400
-  )
-  normal_df <- data.frame(
-    x    = x_seq,
-    dens = dnorm(x_seq, mean = m, sd = s)
-  )
-  
-  ggplot(df, aes(x = number_of_reviews)) +
-    geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.4) +
-    geom_density(linewidth = 1) +
-    geom_line(data = normal_df, aes(x = x, y = dens),
-              linewidth = 1, linetype = "dashed") +
-    labs(
-      title = titulo,
-      x = "Número de reviews",
-      y = "Densidad"
-    ) +
-    theme_minimal()
-}
-
-# ----------------- SEPARAR DATOS POR MUNICIPIO -----------------
-
-# Palma de Mallorca
-palma_price <- datos_price %>%
+# 3) Separar data frames por municipio
+palma_price    <- datos_price %>%
   filter(neighbourhood_cleansed == "Palma de Mallorca")
-palma_rev <- datos_2 %>%
-  filter(neighbourhood_cleansed == "Palma de Mallorca")
-
-# Pollença
 pollenca_price <- datos_price %>%
   filter(neighbourhood_cleansed == "Pollença")
+
+palma_rev  <- datos_2 %>%
+  filter(neighbourhood_cleansed == "Palma de Mallorca")
 pollenca_rev <- datos_2 %>%
   filter(neighbourhood_cleansed == "Pollença")
 
-# ----------------- GRÁFICOS A MOSTRAR EN EL INFORME -----------------
+#------------------------------------------------------------------
+# FUNCIÓN GENERAL:
+#   - x: vector numérico (price o number_of_reviews)
+#   - titulo: título para el panel izquierdo
+#   - xlab: etiqueta del eje X
+# Devuelve: panel izq (hist + kernel + normal) + panel dcha (cuantiles)
+#------------------------------------------------------------------
+graficos_normalidad <- function(x, titulo, xlab) {
+  x <- x[!is.na(x)]                 # quitar NA
+  df <- data.frame(x = x)
+  
+  # Estadísticos básicos
+  m   <- mean(x)
+  s   <- sd(x)
+  q1r <- as.numeric(quantile(x, 0.25))
+  q3r <- as.numeric(quantile(x, 0.75))
+  q1t <- qnorm(0.25, mean = m, sd = s)
+  q3t <- qnorm(0.75, mean = m, sd = s)
+  
+  # Imprimir resumen en la consola (para el texto del informe)
+  print(
+    tibble(
+      media   = m,
+      sd      = s,
+      Q1_real = q1r,
+      Q3_real = q3r,
+      Q1_teo  = q1t,
+      Q3_teo  = q3t
+    )
+  )
+  
+  # Datos para la normal teórica
+  x_seq <- seq(min(x), max(x), length.out = 400)
+  normal_df <- data.frame(
+    x    = x_seq,
+    dens = dnorm(x_seq, mean = m, sd = s)
+  )
+  
+  # Datos para los cuantiles (panel derecho)
+  cuantiles_df <- data.frame(
+    tipo = factor(c("Q1r","Q3r","Q1t","Q3t"),
+                  levels = c("Q1r","Q3r","Q1t","Q3t")),
+    x = c(q1r, q3r, q1t, q3t)
+  )
+  
+  etiquetas_cuantiles <- c(
+    Q1r = sprintf("Q1r = %.1f", q1r),
+    Q3r = sprintf("Q3r = %.1f", q3r),
+    Q1t = sprintf("Q1t = %.1f", q1t),
+    Q3t = sprintf("Q3t = %.1f", q3t)
+  )
+  
+  # -------- Panel izquierdo: histograma + kernel + normal --------
+  p_main <- ggplot(df, aes(x = x)) +
+    geom_histogram(
+      aes(y = ..density.., fill = "Histograma"),
+      bins = 30, alpha = 0.4, color = "black"
+    ) +
+    geom_density(
+      aes(color = "Densidad kernel"),
+      linewidth = 1
+    ) +
+    geom_line(
+      data = normal_df,
+      aes(x = x, y = dens, color = "Normal teórica"),
+      linewidth = 1,
+      linetype = "dashed"
+    ) +
+    scale_fill_manual(
+      name   = "",
+      values = c("Histograma" = "grey80")
+    ) +
+    scale_color_manual(
+      name   = "",
+      values = c(
+        "Densidad kernel" = "blue",
+        "Normal teórica"  = "red"
+      )
+    ) +
+    labs(
+      title = titulo,
+      x = xlab,
+      y = "Densidad"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "top")
+  
+  # -------- Panel derecho: densidad + líneas de cuantiles --------
+  p_quants <- ggplot(df, aes(x = x)) +
+    geom_density(linewidth = 1) +
+    geom_vline(
+      data  = cuantiles_df,
+      aes(xintercept = x, color = tipo, linetype = tipo),
+      linewidth = 1
+    ) +
+    scale_color_manual(
+      name   = "",
+      values = c(Q1r = "blue", Q3r = "darkblue",
+                 Q1t = "red",  Q3t = "darkred"),
+      labels = etiquetas_cuantiles
+    ) +
+    # Solo una leyenda (por color); los tipos de línea no producen leyenda
+    scale_linetype_manual(
+      values = c(Q1r = "solid", Q3r = "solid",
+                 Q1t = "dashed", Q3t = "dashed"),
+      guide = "none"
+    ) +
+    labs(
+      title = "Cuantiles reales vs teóricos",
+      x = xlab,
+      y = "Densidad"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "right")
+  
+  # Combinar paneles: izq (2/3) y dcha (1/3)
+  p_main + p_quants + plot_layout(widths = c(2, 1))
+}
 
-# 1) PRICE (50–400 €) Palma
-grafico_price(
-  palma_price,
-  "Palma de Mallorca – price (50–400 €), 2024-09-13"
+#------------------------------------------------------------------
+# LLAMADAS PARA CADA CASO
+#------------------------------------------------------------------
+
+# 1) Palma – price (50–400 €)
+graficos_normalidad(
+  palma_price$price,
+  "Palma de Mallorca – price (50–400 €), 2024-09-13",
+  "Precio por noche (€)"
 )
 
-# 2) PRICE (50–400 €) Pollença
-grafico_price(
-  pollenca_price,
-  "Pollença – price (50–400 €), 2024-09-13"
+# 2) Pollença – price (50–400 €)
+graficos_normalidad(
+  pollenca_price$price,
+  "Pollença – price (50–400 €), 2024-09-13",
+  "Precio por noche (€)"
 )
 
-# 3) NUMBER_OF_REVIEWS Palma
-grafico_reviews(
-  palma_rev,
-  "Palma de Mallorca – number_of_reviews, 2024-09-13"
+# 3) Palma – number_of_reviews
+graficos_normalidad(
+  palma_rev$number_of_reviews,
+  "Palma de Mallorca – number_of_reviews, 2024-09-13",
+  "Número de reviews"
 )
 
-# 4) NUMBER_OF_REVIEWS Pollença
-grafico_reviews(
-  pollenca_rev,
-  "Pollença – number_of_reviews, 2024-09-13"
+# 4) Pollença – number_of_reviews
+graficos_normalidad(
+  pollenca_rev$number_of_reviews,
+  "Pollença – number_of_reviews, 2024-09-13",
+  "Número de reviews"
 )
+
+
+#TO DO
+#La grafica auxiliar de los cuantiles, usar la grafica de la normal y poner las lineas verticales que te separen los 4 cuantiles, Q1,Q2,Q3,Q4 (son 3 lienas que combinan 25%,%50%,75%), Seria hacer como las desviaciones estandar. Para poder explicar la grafica con mas facilidad y que sea mas visual. Seria en la grafica con la que dibujamos los cuantiles, hacer lo mismo, pero sin los palos del histograma, ya que queremos observar la asimetria y si se aproxima a una distribucion normal.
+#
+#
+#
+
 ```
 
 ## Pregunta 3 (**1punto**)
@@ -378,11 +447,126 @@ grafico_reviews(
 Con los datos de `listings0` de todos los periodos, contrastar si la media del precio en Alcudia es igual a la de Palma **contra** que es mayor que en Palma para los precios mayores que 50 euros y menores de 400. Construid la hipótesis nula y alternativa, calculad el $p$-valor y el intervalo de confianza asociado al contraste. Justifica técnicamente la conclusión del contraste.
 
 
+
+```{r}  
+# ---------------------------------------------------------------
+# PREGUNTA 3
+# Contraste de medias:
+#   H0: media_Alcudia = media_Palma
+#   H1: media_Alcudia > media_Palma
+# Para price entre 50 y 400 €
+# ---------------------------------------------------------------
+
+# Filtrar datos para Alcudia y Palma, price entre 50 y 400 €
+datos_p3 <- listings0 %>%
+  filter(
+    neighbourhood_cleansed %in% c("Alcúdia", "Palma de Mallorca"),
+    price > 50,
+    price < 400
+  )
+# Separar vectores de precios por municipio
+precio_alcudia <- datos_p3 %>%
+  filter(neighbourhood_cleansed == "Alcúdia") %>%
+  pull(price)
+precio_palma <- datos_p3 %>%
+  filter(neighbourhood_cleansed == "Palma de Mallorca") %>%
+  pull(price)
+# Realizar el test t de Student para muestras independientes
+test_p3 <- t.test(
+  precio_alcudia,
+  precio_palma,
+  alternative = "greater",  # H1: media_Alcudia > media_Palma
+  var.equal   = FALSE       # No asumir varianzas iguales
+)
+# Mostrar resultados del test
+test_p3
+
+# Interpretación:
+# - p-valor
+# - intervalo de confianza
+```
+
 ## Pregunta 4 (**1punto**)
 
 Con los  datos de `listings0`, contrastar si las medias de los precios en Alcudia entre los periodos  2025-06-15 y   2025-09-21 son iguales contra que son menores en 2023. Construid la hipótesis nula y alternativa, calculad el $p$-valor y el intervalo de confianza asociado al contraste.
 
 Haced un diagrama de caja comparativo de los precios  en Alcudia  por periodo y coméntalo.
+```{r}
+# ---------------------------------------------------------------
+# PREGUNTA 4
+# Contraste de medias:
+#   H0: media_2025-06-15 = media_2025-09-21
+#   H1: media_2025-06-15 < media_2025-09-21
+# Para Alcudia
+# ---------------------------------------------------------------
+# Filtrar datos para Alcudia y los dos periodos
+datos_p4 <- listings0 %>%
+  filter(
+    neighbourhood_cleansed == "Alcúdia",
+    date %in% as.Date(c("2025-06-15", "2025-09-21"))
+  )
+# Separar vectores de precios por periodo
+precio_junio <- datos_p4 %>%
+  filter(date == as.Date("2025-06-15")) %>%
+  pull(price)
+precio_septiembre <- datos_p4 %>%
+  filter(date == as.Date("2025-09-21")) %>%
+  pull(price)
+# Realizar el test t de Student para muestras independientes
+test_p4 <- t.test(
+  precio_junio,
+  precio_septiembre,
+  alternative = "less",  # H1: media_2025-06-15 < media_2025-09-21
+  var.equal   = FALSE    # No asumir varianzas iguales
+)
+# Mostrar resultados del test
+test_p4
+# Interpretación:
+# - p-valor
+# - intervalo de confianza
+# Diagrama de caja comparativo
+ggplot(datos_p4, aes(x = as.factor(date), y = price)) +
+  geom_boxplot(fill = "lightblue", color = "darkblue") +
+  scale_y_log10()+
+  labs(
+    title = "Diagrama de caja de precios en Alcudia por periodo",
+    x = "Periodo",
+    y = "Precio (€)"
+  ) +
+  theme_minimal()
+
+datos_p4 <- listings0 %>%
+  filter(
+    neighbourhood_cleansed == "Alcúdia",
+    date %in% as.Date(c("2025-06-15", "2025-09-21"))
+  )
+# Separar vectores de precios por periodo
+precio_junio <- datos_p4 %>%
+  filter(date == as.Date("2025-06-15")) %>%
+  pull(price)
+precio_septiembre <- datos_p4 %>%
+  filter(date == as.Date("2025-09-21")) %>%
+  pull(price)
+# Realizar el test t de Student para muestras independientes
+test_p4 <- t.test(
+  precio_junio,
+  precio_septiembre,
+  alternative = "less",  # H1: media_2025-06-15 < media_2025-09-21
+  var.equal   = FALSE    # No asumir varianzas iguales
+)
+# Mostrar resultados del test
+test_p4
+# Interpretación:
+# - p-valor
+# - intervalo de confianza
+# Diagrama de caja comparativo
+
+ggplot(listings0, aes(x = accommodates, y = price)) +
+  geom_point(alpha = 0.4) +
+  labs(x = "Capacidad", y = "Precio (€)", 
+       title = "Precio vs capacidad")+
+  theme_minimal()
+```
 
 ## Pregunta 5 (**1 punto**)
 
