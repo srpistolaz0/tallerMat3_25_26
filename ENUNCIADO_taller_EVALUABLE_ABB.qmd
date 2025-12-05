@@ -714,6 +714,80 @@ Calcula la matriz de correlaciones entre estas variables y haz un gráfico de pa
 
 Haz un `matrixplot` de las correlaciones con la librería `corrplot`. Comenta los resultados.
 
+```{r}
+# -------------------------------------------------------------------
+# PREGUNTA 9
+# Matriz de Correlaciones, ggpairs y corrplot
+# Variables: review_scores_rating, cleanliness, location, value
+# Agrupación: neighbourhood_cleansed
+# -------------------------------------------------------------------
+
+library(dplyr)
+library(ggplot2)
+library(GGally)   # Para ggpairs
+library(corrplot) # Para corrplot
+
+# 1. Construir el dataset y limpiar NAs
+# Seleccionamos las variables pedidas
+variables_interes <- c("review_scores_rating", 
+                       "review_scores_cleanliness", 
+                       "review_scores_location", 
+                       "review_scores_value",
+                       "neighbourhood_cleansed")
+
+datos_p9 <- listings0 %>%
+  select(all_of(variables_interes)) %>%
+  na.omit() # Eliminamos filas con NAs para poder calcular correlaciones
+
+# 2. Matriz de correlaciones (Solo variables numéricas)
+# Excluimos 'neighbourhood_cleansed' porque es categórica
+datos_numericos <- datos_p9 %>%
+  select(-neighbourhood_cleansed)
+
+matriz_cor <- cor(datos_numericos, method = "pearson")
+
+print("Matriz de Correlaciones:")
+print(round(matriz_cor, 3))
+
+# 3. Gráfico ggpairs
+# Para que el gráfico sea legible, filtramos solo los municipios principales.
+# Si intentamos graficar los 50 municipios, será ininteligible.
+municipios_top <- c("Palma de Mallorca", "Alcúdia", "Calvià", "Pollença")
+
+datos_p9_plot <- datos_p9 %>%
+  filter(neighbourhood_cleansed %in% municipios_top)
+
+# Generamos el gráfico
+# - upper: muestra las correlaciones
+# - lower: muestra nubes de puntos (points)
+# - diag: muestra densidades
+# - aes(color = ...): separa los colores por municipio
+ggpairs(
+  datos_p9_plot,
+  columns = 1:4, # Las columnas numéricas
+  aes(color = neighbourhood_cleansed, alpha = 0.5),
+  title = "Correlograma: Relación entre puntuaciones por Municipio",
+  upper = list(continuous = wrap("cor", size = 3)),
+  lower = list(continuous = wrap("points", alpha = 0.3, size=0.5))
+) + 
+  theme_minimal()
+
+# 4. Matrixplot de correlaciones (corrplot)
+# Este gráfico visualiza la matriz numérica calculada en el paso 2
+corrplot(matriz_cor, 
+         method = "ellipse", # Forma de las celdas (elipse, círculo, cuadrado...)
+         type = "upper",     # Mostrar solo la triangular superior
+         order = "hclust",   # Ordenar por similitud (clustering jerárquico)
+         tl.col = "black",   # Color del texto de las etiquetas
+         tl.srt = 45,        # Rotación de las etiquetas
+         addCoef.col = "black", # Añadir coeficientes numéricos en negro
+         diag = FALSE,       # No mostrar la diagonal principal (que es siempre 1)
+         title = "Matriz de Correlación de Puntuaciones",
+         mar = c(0,0,2,0)    # Ajustar márgenes para el título
+)
+```
+
+
 ## Pregunta 10 (**2 puntos**)
 
 La [Zipf's law es una ley empírica](https://en.wikipedia.org/wiki/Zipf%27s_law#Word_frequencies_in_natural_languages) que dice que la frecuencia de las palabras en un texto es inversamente proporcional a su rango. Decidid si la ley se ajusta a los datos de la longitud de los comentarios de los apartamentos de la muestra "2025-09-21" Mallorca, haced lo mismo para description de `listings0`. Para ello, haced un análisis de regresión lineal de la frecuencia de las longitudes de los comentarios/descripciones de los apartamentos de Mallorca y el rango de las longitudes de los comentarios. Justificad la respuesta, estadísticamente y gráficamente.
@@ -755,5 +829,88 @@ summary(sol2)
 sol3=lm(tbl2$Log_Freq~tbl2$Log_Rank)
 summary(sol3)
 ```
+
+```{r}
+# -------------------------------------------------------------------
+# PREGUNTA 10
+# Ley de Zipf: Análisis de frecuencias de longitudes de texto
+# Variables: reviews$comments y listings0$description
+# -------------------------------------------------------------------
+
+library(dplyr)
+library(stringr)
+library(ggplot2)
+
+# Función auxiliar para realizar el análisis de Zipf completo
+analisis_zipf <- function(texto_columna, titulo_grafico) {
+  
+  # 1. Calcular longitud (número de palabras) de cada texto
+  #    Usamos na.omit para evitar errores con textos vacíos
+  longitudes <- str_count(na.omit(texto_columna), "\\w+")
+  
+  # 2. Crear tabla de frecuencias de esas longitudes
+  tabla_freq <- table(longitudes)
+  
+  # 3. Construir el Data Frame (Tibble) con los Rangos
+  #    Convertimos la tabla en un dataframe numérico
+  df_zipf <- tibble(
+    Longitud = as.numeric(names(tabla_freq)), # La longitud (eje X original)
+    Freq     = as.numeric(tabla_freq)         # Cuántas veces aparece esa longitud
+  ) %>%
+    arrange(desc(Freq)) %>%             # Ordenamos de mayor a menor frecuencia
+    mutate(
+      Rank = row_number(),              # Asignamos el Rango (1 = el más frecuente)
+      Log_Freq = log(Freq),             # Logaritmo de la frecuencia
+      Log_Rank = log(Rank)              # Logaritmo del rango
+    )
+  
+  # 4. Filtrar datos (Heurística sugerida en el enunciado)
+  #    Se eliminan los rangos muy bajos (top 10) y muy altos (>1000) 
+  #    para evitar el ruido en las colas de la distribución.
+  df_filtrado <- df_zipf %>%
+    filter(Rank > 10 & Rank < 1000)
+  
+  # 5. Ajuste del Modelo Lineal (Regresión Log-Log)
+  modelo <- lm(Log_Freq ~ Log_Rank, data = df_filtrado)
+  
+  # 6. Gráfico Log-Log con la recta de regresión
+  plot <- ggplot(df_filtrado, aes(x = Log_Rank, y = Log_Freq)) +
+    geom_point(alpha = 0.4, color = "darkblue") +
+    geom_smooth(method = "lm", color = "red", se = FALSE, linewidth = 1) +
+    labs(
+      title = paste("Ley de Zipf:", titulo_grafico),
+      subtitle = paste("Pendiente (alpha):", round(coef(modelo)[2], 4), 
+                       "| R-squared:", round(summary(modelo)$r.squared, 4)),
+      x = "Log(Rango)",
+      y = "Log(Frecuencia)"
+    ) +
+    theme_minimal()
+  
+  return(list(modelo = modelo, grafico = plot))
+}
+
+# --- EJECUCIÓN DEL ANÁLISIS ---
+
+# 1. Análisis para COMENTARIOS (Reviews)
+# Asumimos que el objeto 'reviews' está cargado como se indica en el enunciado
+resultados_reviews <- analisis_zipf(reviews$comments, "Longitud de Reviews")
+
+# 2. Análisis para DESCRIPCIONES (Listings)
+resultados_descriptions <- analisis_zipf(listings0$description, "Longitud de Descripciones")
+
+# --- MOSTRAR RESULTADOS ---
+
+# Gráficos
+print(resultados_reviews$grafico)
+print(resultados_descriptions$grafico)
+
+# Resúmenes estadísticos de los modelos
+cat("\n--- Resumen Modelo REVIEWS ---\n")
+print(summary(resultados_reviews$modelo))
+
+cat("\n--- Resumen Modelo DESCRIPTIONS ---\n")
+print(summary(resultados_descriptions$modelo))
+```
+
 
 
