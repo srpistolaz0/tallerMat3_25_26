@@ -219,6 +219,9 @@ tabla_p1 <- resumen_p1 %>%
   arrange(neighbourhood_cleansed, date) %>%              # ordenar municipio/fecha
   mutate(across(where(is.numeric), ~ round(., 2)))       # redondear numéricos
 
+# Necesitas saber el número de filas para colorear el cuerpo
+n_filas <- nrow(tabla_p1) 
+
 tabla_p1 %>%
   kbl(
     caption = "Estadísticos descriptivos de price y number_of_reviews por municipio y periodo",
@@ -227,18 +230,32 @@ tabla_p1 %>%
       "Media", "SD", "Mín.", "Q1", "Mediana", "Q3", "Máx.",
       "Media", "SD", "Mediana"
     ),
-    align    = c("l", "c", "r", rep("r", 10)),           # alineación columnas
+    align    = c("l", "c", "r", rep("r", 10)),
     booktabs = TRUE
   ) %>%
-  # Cabeceras agrupadas: primeras 3 columnas sin grupo,
-  # luego 7 para price y 3 para number_of_reviews
-  add_header_above(c(" " = 3, "Price" = 7, "Number of reviews" = 3)) %>%
+  add_header_above(c(" " = 3, "Price" = 7, "Number of reviews" = 3),background = "#2c3e50") %>%
   kable_styling(
     full_width        = FALSE,
+    # Nota: Si pones un color de fondo manual, a veces es mejor quitar "striped"
+    # para que no se mezcle, pero puedes dejarlo si quieres.
     bootstrap_options = c("striped", "hover", "condensed", "responsive")
   ) %>%
-  column_spec(1, bold = TRUE) %>%                        # municipio en negrita
-  collapse_rows(columns = 1, valign = "top")             # unir filas por municipio
+  column_spec(1, bold = TRUE) %>%
+  
+  # --- AQUÍ ESTÁ EL CAMBIO DE COLOR ---
+  
+  # 1. Cambiar color de fondo de la CABECERA (Fila 0)
+  # 'color' es el texto, 'background' es el fondo
+  row_spec(0, bold = TRUE, color = "white", background = "#2c3e50") %>% 
+  
+  # 2. Cambiar color de fondo de las FILAS DE DATOS (Filas 1 hasta n)
+  # Esto quitará el blanco de fondo. Puedes usar nombres ("lightyellow") o Hex ("#fffff0")
+  row_spec(1:n_filas, color = "white", background = "#2c3e50") %>% 
+  
+  # -------------------------------------
+  
+  collapse_rows(columns = 1, valign = "top") %>%
+  scroll_box(width="100%", height="600px")
 
 ```
 
@@ -377,6 +394,37 @@ grafico_reviews(
 
 Con los datos de `listings0` de todos los periodos, contrastar si la media del precio en Alcudia es igual a la de Palma **contra** que es mayor que en Palma para los precios mayores que 50 euros y menores de 400. Construid la hipótesis nula y alternativa, calculad el $p$-valor y el intervalo de confianza asociado al contraste. Justifica técnicamente la conclusión del contraste.
 
+```{r}
+# 1. Filtrar los datos:
+#    - Seleccionamos solo los registros con precio > 50 y < 400
+#    - Seleccionamos los municipios "Alcúdia" y "Palma de Mallorca"
+datos_p3 <- listings0 %>%
+  filter(price > 50 & price < 400) %>%
+  filter(neighbourhood_cleansed %in% c("Alcúdia", "Palma de Mallorca"))
+
+# 2. Separar en dos vectores para facilitar el t.test
+# Nota: Asegurarse de cómo está escrito el nombre en los datos (con o sin acento). 
+# En los datos oficiales suele ser "Alcúdia".
+precios_alcudia <- datos_p3 %>%
+  filter(neighbourhood_cleansed == "Alcúdia") %>%
+  pull(price)
+
+precios_palma <- datos_p3 %>%
+  filter(neighbourhood_cleansed == "Palma de Mallorca") %>%
+  pull(price)
+
+# 3. Realizar el t-test
+#    alternative = "greater" porque queremos probar si Alcúdia > Palma
+test_p3 <- t.test(x = precios_alcudia, 
+                  y = precios_palma, 
+                  alternative = "greater", 
+                  var.equal = FALSE) # Asumimos varianzas desiguales (Welch)
+
+# Mostramos el resultado
+test_p3
+```
+
+
 
 ## Pregunta 4 (**1punto**)
 
@@ -384,20 +432,211 @@ Con los  datos de `listings0`, contrastar si las medias de los precios en Alcudi
 
 Haced un diagrama de caja comparativo de los precios  en Alcudia  por periodo y coméntalo.
 
+```{r}
+# -------------------------------------------------------------------
+# PREGUNTA 4
+# Contraste de medias en Alcúdia: 2025-06-15 vs 2025-09-21
+# Hipótesis: Media(Junio) < Media(Septiembre)
+# -------------------------------------------------------------------
+
+# 1. Filtrar los datos para Alcúdia y las dos fechas de interés
+#    Aseguramos que la fecha sea de tipo Date para filtrar correctamente
+fechas_interes <- as.Date(c("2025-06-15", "2025-09-21"))
+
+datos_p4 <- listings0 %>%
+  filter(neighbourhood_cleansed == "Alcúdia",
+         date %in% fechas_interes) %>%
+  # Seleccionamos variables útiles para limpiar un poco
+  select(price, date, neighbourhood_cleansed)
+
+# 2. Separar los precios en dos vectores para el t.test
+precios_jun <- datos_p4 %>%
+  filter(date == "2025-06-15") %>%
+  pull(price)
+
+precios_sep <- datos_p4 %>%
+  filter(date == "2025-09-21") %>%
+  pull(price)
+
+# 3. Realizar el t-test (Welch Two Sample t-test)
+#    alternative = "less" porque la hipótesis es que precios_jun < precios_sep
+test_p4 <- t.test(x = precios_jun, 
+                  y = precios_sep, 
+                  alternative = "less", 
+                  var.equal = FALSE)
+
+# Mostrar resultados del test
+test_p4
+
+# -------------------------------------------------------------------
+# DIAGRAMA DE CAJA (BOXPLOT) COMPARATIVO
+# -------------------------------------------------------------------
+
+ggplot(datos_p4, aes(x = factor(date), y = price, fill = factor(date))) +
+  geom_boxplot(alpha = 0.7, outlier.colour = "red", outlier.size = 1) +
+  scale_fill_manual(values = c("#3498db", "#e74c3c")) + # Colores personalizados
+  labs(
+    title = "Distribución de precios en Alcúdia por periodo",
+    subtitle = "Comparativa: 15-Jun-2025 vs 21-Sep-2025",
+    x = "Fecha de Scrapping",
+    y = "Precio (€)",
+    fill = "Fecha"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") # Ocultamos leyenda porque el eje X ya es claro
+```
+
+
 ## Pregunta 5 (**1 punto**)
 
 Comparar con un bopxlot de las valoraciones medias `review_scores_rating` para Alcudia, Palma, Calvià y
 Pollença. Hacer el gráfico con ggplot2 y todo lujo de destalles.
+
+```{r}
+# -------------------------------------------------------------------
+# PREGUNTA 5
+# Comparación de review_scores_rating mediante Boxplot
+# Municipios: Alcúdia, Palma de Mallorca, Calvià, Pollença
+# -------------------------------------------------------------------
+
+library(dplyr)
+library(ggplot2)
+
+# 1. Definir los municipios de interés
+# Nota: Ajusta los nombres exactos según aparezcan en tus datos (tildes, etc.)
+municipios_p5 <- c("Alcúdia", "Palma de Mallorca", "Calvià", "Pollença")
+
+# 2. Preparar los datos
+datos_p5 <- listings0 %>%
+  filter(neighbourhood_cleansed %in% municipios_p5) %>%
+  # Eliminamos filas sin puntuación para limpiar el gráfico
+  filter(!is.na(review_scores_rating))
+
+# 3. Generar el gráfico con "todo lujo de detalles"
+ggplot(datos_p5, aes(x = neighbourhood_cleansed, y = review_scores_rating, fill = neighbourhood_cleansed)) +
+  
+  # Capa de Boxplot
+  # outlier.alpha = 0.3 hace que los puntos atípicos sean semitransparentes para no saturar
+  geom_boxplot(alpha = 0.7, outlier.colour = "red", outlier.alpha = 0.5, outlier.size = 1.5) +
+  
+  # Añadir un punto blanco/negro para indicar la MEDIA (el boxplot solo muestra la mediana)
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white", color = "black") +
+  
+  # Colores personalizados (Paleta Brewer o manual)
+  scale_fill_brewer(palette = "Set2") +
+  
+  # Etiquetas y Títulos completos
+  labs(
+    title = "Distribución de las valoraciones de los usuarios",
+    subtitle = "Comparativa: Alcúdia, Calvià, Palma y Pollença",
+    x = "Municipio",
+    y = "Puntuación Media (Rating 0-5)",
+    fill = "Municipio",
+    caption = "Fuente: Inside Airbnb (listings0) | El rombo blanco indica la media"
+  ) +
+  
+  # Tema estético limpio
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = element_text(size = 11, hjust = 0.5, color = "gray40"),
+    axis.text.x = element_text(face = "bold", size = 10),
+    legend.position = "none" # Ocultamos leyenda porque el eje X ya identifica los grupos
+  ) +
+  
+  # Ajustar escala Y si es necesario (el rating suele ser de 0 a 5 o de 0 a 100 según la versión)
+  # En datasets recientes es sobre 5. Si tus datos son sobre 100, ajusta los límites.
+  coord_cartesian(ylim = c(3, 5)) # Hacemos zoom en la parte superior donde están casi todos los datos
+```
 
 
 ## Pregunta 6 (**1 punto**)
 
 Calcular la proporción de apartamentos de la muestra "2025-09-21" con media de valoración `review_scores_rating` mayor que 4 en Alcudia y en Calvià son iguales contra que son distintas. Construid un intervalo de confianza para la diferencia de proporciones.
 
+```{r}
+# -------------------------------------------------------------------
+# PREGUNTA 6
+# Comparación de proporciones (Rating > 4): Alcúdia vs Calvià
+# Fecha: 2025-09-21
+# -------------------------------------------------------------------
+
+# 1. Preparar los datos
+datos_p6 <- listings0 %>%
+  filter(date == as.Date("2025-09-21"),
+         neighbourhood_cleansed %in% c("Alcúdia", "Calvià")) %>%
+  filter(!is.na(review_scores_rating)) # Eliminamos los que no tienen puntuación
+
+# 2. Calcular los conteos de "éxitos" y el total de observaciones por municipio
+resumen_p6 <- datos_p6 %>%
+  group_by(neighbourhood_cleansed) %>%
+  summarise(
+    exitos = sum(review_scores_rating > 4), # Conteo de ratings > 4
+    total = n()                             # Total de apartamentos con rating
+  )
+
+# Mostramos la tabla resumen para verificar
+resumen_p6
+
+# 3. Extraer vectores para el prop.test
+# Aseguramos el orden: Alcúdia primero, luego Calvià (orden alfabético por defecto)
+# Ojo: prop.test pide vectores: x (éxitos) y n (totales)
+x_exitos <- resumen_p6$exitos
+n_totales <- resumen_p6$total
+
+# 4. Realizar el test de proporciones (Two-sample test for equality of proportions)
+test_p6 <- prop.test(x = x_exitos, n = n_totales, alternative = "two.sided")
+
+# Mostrar resultados
+test_p6
+```
+
 
 ## Pregunta 7 (**1punto**)
 
 Calcular la proporción de apartamentos de los periodos 2025-06-15 y  2025-09-21  con media de valoración `review_scores_rating` mayor que 4 en Palma  y en Pollença son iguales contra que son distintas.
+
+```{r}
+# -------------------------------------------------------------------
+# PREGUNTA 7
+# Comparación de proporciones (Rating > 4): Palma vs Pollença
+# Periodos combinados: 2025-06-15 y 2025-09-21
+# -------------------------------------------------------------------
+
+# 1. Filtrar datos: Fechas y Municipios específicos
+fechas_p7 <- as.Date(c("2025-06-15", "2025-09-21"))
+municipios_p7 <- c("Palma de Mallorca", "Pollença")
+
+datos_p7 <- listings0 %>%
+  filter(date %in% fechas_p7,
+         neighbourhood_cleansed %in% municipios_p7) %>%
+  filter(!is.na(review_scores_rating)) # Eliminar NAs en la valoración
+
+# 2. Calcular éxitos y totales por municipio
+# Al agrupar por municipio, R sumará los casos de ambas fechas automáticamente
+resumen_p7 <- datos_p7 %>%
+  group_by(neighbourhood_cleansed) %>%
+  summarise(
+    exitos = sum(review_scores_rating > 4),
+    total = n()
+  )
+
+# Ver tabla resumen
+resumen_p7
+
+# 3. Preparar vectores para el test
+# Nota: Verifica el orden alfabético en 'resumen_p7' para saber cuál es prop 1 y prop 2.
+# Generalmente: 1 = Palma de Mallorca, 2 = Pollença
+x_exitos_p7 <- resumen_p7$exitos
+n_totales_p7 <- resumen_p7$total
+
+# 4. Realizar el test de proporciones (Two-sample test for equality of proportions)
+test_p7 <- prop.test(x = x_exitos_p7, n = n_totales_p7, alternative = "two.sided")
+
+# Mostrar resultados
+test_p7
+```
+
 
 ## Pregunta 8 (**1punto**)
 
@@ -411,6 +650,59 @@ table(cut(listings0$review_scores_rating,5),
       cut(listings0$review_scores_location,5))
 ```
 
+```{r}
+# -------------------------------------------------------------------
+# PREGUNTA 8
+# Test de Independencia Chi-cuadrado y Coeficiente de Contingencia
+# Variables: review_scores_rating y review_scores_location
+# -------------------------------------------------------------------
+
+# 1. Preparar los datos (eliminar NAs)
+datos_p8 <- listings0 %>%
+  select(review_scores_rating, review_scores_location) %>%
+  na.omit()
+
+# 2. Agrupar en 5 categorías usando QUANTILES para evitar celdas vacías
+#    La función quantile calcula los puntos de corte para tener grupos equilibrados (0%, 20%, 40%, 60%, 80%, 100%)
+#    Nota: Si hay muchos valores repetidos (ej. muchos 5.0), 'cut' puede dar error por "breaks not unique".
+#    En ese caso, ajustamos ligeramente o reducimos grupos, pero intentamos primero con quintiles.
+
+# Calculamos los cortes
+breaks_rating <- unique(quantile(datos_p8$review_scores_rating, probs = seq(0, 1, 0.2)))
+breaks_location <- unique(quantile(datos_p8$review_scores_location, probs = seq(0, 1, 0.2)))
+
+# Creamos los factores
+# include.lowest = TRUE asegura que el valor mínimo entre en el primer intervalo
+datos_p8$cat_rating <- cut(datos_p8$review_scores_rating, breaks = breaks_rating, include.lowest = TRUE)
+datos_p8$cat_location <- cut(datos_p8$review_scores_location, breaks = breaks_location, include.lowest = TRUE)
+
+# 3. Construir la Tabla de Contingencia
+tabla_contingencia <- table(datos_p8$cat_rating, datos_p8$cat_location)
+
+print("Tabla de Contingencia:")
+print(tabla_contingencia)
+
+# 4. Realizar el Test Chi-cuadrado
+test_chi <- chisq.test(tabla_contingencia)
+
+print(test_chi)
+
+# 5. Calcular el Coeficiente de Contingencia de Pearson
+#    Fórmula: C = raiz( Chi^2 / (N + Chi^2) )
+chi_squared_stat <- test_chi$statistic
+N <- sum(tabla_contingencia) # Tamaño total de la muestra
+
+coef_contingencia <- sqrt(chi_squared_stat / (N + chi_squared_stat))
+
+# Mostramos el resultado
+cat("\nCoeficiente de Contingencia de Pearson (C):", round(coef_contingencia, 4), "\n")
+
+# (Opcional) Calcular el máximo posible para C para normalizarlo (C_max)
+# C nunca llega a 1. Su máximo depende del número de filas/columnas (k). C_max = raiz((k-1)/k)
+k <- min(dim(tabla_contingencia))
+c_max <- sqrt((k - 1) / k)
+cat("Coeficiente normalizado (C / C_max):", round(coef_contingencia / c_max, 4), "\n")
+```
 
 
 ## Pregunta 9 (**3 puntos**)
